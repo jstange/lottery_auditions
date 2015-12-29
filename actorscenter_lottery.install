@@ -1,0 +1,57 @@
+<?php
+
+function actorscenter_lottery_install() {
+  /*
+  $t = get_t();
+  $type = node_type_set_defaults();
+  $type_values = array(
+    'op' => 'Save content type', 
+    'type' => 'lottery_audition',
+    'name' => 'Lottery Audition', 
+    'orig_type' => '', 
+    'old_type' => '', 
+    'description' => 'Desc', 
+    'help' => 'Exp', 
+    'title_label' => '', 
+    'body_label' => '', 
+    'base' => '',
+    'custom' => '1', 
+    'locked' => '0', 
+    'modified' => '1'
+  );
+  node_types_rebuild();
+  menu_rebuild();
+  */
+}
+
+/*
+ * A lottery audition is just a regular piece of content with some known
+ * fields, but we'll want to track user request to sign up for them.
+ */
+function actorscenter_lottery_schema() {
+  $schema['actorscenter_lottery_signups'] = array(
+    'description' => t('Lottery auditions.'),
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'placement' => array(
+	'description' => "0 for no slot, 1 for accepted, 2 for wait list, 3 for declined",
+        'type' => 'int',
+        'not null' => TRUE
+      )
+    ),
+    'foreign keys' => array(
+      'uid' => array('users' => 'uid'),
+      'nid' => array('node' => 'nid')
+    )
+  );
+  return $schema;
+}

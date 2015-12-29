@@ -1,0 +1,7 @@
+name = The Actors Center Lottery
+description = THINGY
+core = 7.x
+dependencies[] = field_collection
+dependencies[] = addressfield
+
+;configure = admin/config/content/imagefield_exact_dimensions

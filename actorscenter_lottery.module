@@ -1,0 +1,155 @@
+<?php
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path 
+ *   Which path of the site we're using to display help
+ * @param arg 
+ *   Array that holds the current path as returned from arg() function
+ */
+function actorscenter_lottery_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#actorscenter_lottery":
+      return '<p>' . t("Content types and other code for AC's Lottery auditions") . '</p>';
+      break;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+/*
+function actorscenter_lottery_menu() {
+  $items = array();
+
+  $items['admin/config/content/actorscenter_lottery'] = array(
+    'title' => 'Imagefield Exact Dimensions',
+    'description' => 'Allow a content type to require one of a list of exact image dimensions in Image fields.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('actorscenter_lottery_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+*/
+
+/*
+function actorscenter_lottery_theme($existing, $type, $theme, $path) {
+}
+*/
+
+function actorscenter_lottery_field_widget_form_alter(&$element, &$form_state, $context) {
+  // Add custom validation hooks for Field Collections.
+  if ($context['field']['field_name'] == 'field_lottery_time_blocks') {
+  watchdog("HATE", "<pre>".print_r($element, true)."</pre>");
+    array_unshift($element['#element_validate'], 'actorscenter_lottery_field_lottery_time_blocks_validate');
+  }
+}
+
+function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$form_state, $form) {    
+  $count = 0;
+  drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+    $date1 = $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value']['value']['date'];
+    form_set_value($form["field_lottery_time_blocks"][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0], array('#value' => array('value2' => array('date' => $date1))), $form_state);
+    $count++;
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function actorscenter_lottery_form_alter(&$form, $form_state, $form_id) {
+  if($form_id == "lottery_audition_node_form"){
+    drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+
+    array_unshift($form['#validate'], 'actorscenter_lottery_form_validate');
+    $form['wrapper'] = array(
+      '#prefix' => '<div id="lottery_form_wrapper">',
+      '#suffix' => '</div>'
+    );
+    dpm($form);
+    $form['field_lottery_time_blocks']['#ajax'] = array(
+      'event' => 'change',
+      'callback' => '_actorscenter_lottery_timeblock_ajax',
+      'wrapper' => 'lottery_time_block'
+    );
+    $form['field_lottery_time_blocks']['wrapper'] = array(
+      '#prefix' => '<div id="lottery_time_block">',
+      '#suffix' => '</div>',
+    );
+    $count = 0;
+    while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+      /*
+      $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#ajax'] = array(
+	'event' => 'change',
+        'callback' => '_actorscenter_lottery_timeblock_ajax',
+        'wrapper' => 'lottery_block_timerange_'.$count
+      );
+      */
+      $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['wrapper'] = array(
+	'#prefix' => '<div id="lottery_block_timerange_'.$count.'">',
+	'#suffix' => '</div>',
+      );
+      $count++;
+    }
+  }
+}
+
+function _actorscenter_lottery_timeblock_ajax(&$form, $form_state){
+  /*
+  $commands = array();
+  $count = 0;
+  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+  }
+  */
+
+  return($form['field_lottery_time_blocks']['wrapper']);
+}
+
+/**
+ */
+/*
+function actorscenter_lottery_form_submit($form, &$form_state){
+}
+*/
+
+/**
+ * Implements validation from the Form API.
+ * 
+ * @param $form
+ *   A structured array containing the elements and properties of the form.
+ * @param $form_state
+ *   An array that stores information about the form's current state 
+ *   during processing.
+ */
+function actorscenter_lottery_form_validate($form, &$form_state){
+  $count = 0;
+  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+    $css_id = "#lottery_block_timerange_$count";
+    if(!isset($form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value'])){
+      break;
+    }
+    $value = $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value'];
+    $date1 = $value['value']['date']." ".$value['value']['time'];
+    // Yes, we're using the start time's date value on purpose. We don't ever
+    // cross midnight with a single time block, so we effectively ignore the
+    // (hidden) second date field, only using the time.
+    $value['value2']['date'] = $value['value']['date'];
+    $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value']['value2']['date'] = $value['value']['date'];
+    $date2 = $value['value2']['date']." ".$value['value2']['time'];
+    form_set_value($form['field_lottery_time_blocks'], array(LANGUAGE_NONE => array(0 => array('field_time_range' => array(LANGUAGE_NONE => array(0 => array('#value' => array('value2' => array('date' => $value['value']['date'])))))))), $form_state);
+    $form_elt = "field_lottery_time_blocks][".LANGUAGE_NONE."][$count][field_time_range][und";
+    if((strtotime($date2) - strtotime($date1))/3600 > 12){
+      form_set_error($form_elt, "Time blocks cannot span more than 12 hours");
+    } elseif(strtotime($date2) <= strtotime($date1)){
+      form_set_error($form_elt, "End time must be after start time");
+    }
+    $count++;
+  }
+}
