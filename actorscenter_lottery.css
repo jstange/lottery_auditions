@@ -1,16 +1,21 @@
 /*
  * Make our date range displays less blocky and horrible.
  */
-.field-name-field-time-range div.start-date-wrapper,
-.field-name-field-time-range div.end-date-wrapper,
-.field-name-field-time-range div.end-date-wrapper label,
-.field-name-field-time-range div.end-date-wrapper div {
+.page-node-edit .field-name-field-time-range div.start-date-wrapper,
+.page-node-edit .field-name-field-time-range div.end-date-wrapper,
+.page-node-edit .field-name-field-time-range div.end-date-wrapper label,
+.page-node-edit .field-name-field-time-range div.end-date-wrapper div,
+.page-node-add .field-name-field-time-range div.start-date-wrapper,
+.page-node-add .field-name-field-time-range div.end-date-wrapper,
+.page-node-add .field-name-field-time-range div.end-date-wrapper label,
+.page-node-add .field-name-field-time-range div.end-date-wrapper div {
   clear:none;
   display:inline-block;
   width:auto;
   float:left;
 }
-.field-name-field-time-range div.end-date-wrapper label {
+.page-node-edit .field-name-field-time-range div.end-date-wrapper label,
+.page-node-add .field-name-field-time-range div.end-date-wrapper label {
   vertical-align:middle;
 }
 
@@ -18,6 +23,16 @@
  * Hide the unnecessary second calendar popup for audition block time ranges,
  * which can never span more than one day.
  */
-.field-name-field-time-range .end-date-wrapper .date-padding div:first-child {
+.page-node-edit .field-name-field-time-range .end-date-wrapper .date-padding div:first-child,
+.page-node-add .field-name-field-time-range .end-date-wrapper .date-padding div:first-child {
   display:none;
+}
+
+.page-content .node-lottery-audition .field-name-field-lottery-time-blocks {
+  font-weight:bold;
+  font-size:1.2em;
+}
+.page-content .node-lottery-audition .field-label {
+  padding-top:0.5em;
+
 }
