@@ -43,22 +43,85 @@ function actorscenter_lottery_theme($existing, $type, $theme, $path) {
 }
 */
 
+/*
+function actorscenter_lottery_block_info() {
+  $blocks['lottery_audition_signup'] = array(
+    'info' => t('Lottery Audition Signups'),
+    'cache' => DRUPAL_CACHE_PER_USER,
+  );
+  return $blocks;
+}
+*/
+
 function actorscenter_lottery_field_widget_form_alter(&$element, &$form_state, $context) {
-  // Add custom validation hooks for Field Collections.
+  // Add custom validation hooks for Field Collections. Horrible.
   if ($context['field']['field_name'] == 'field_lottery_time_blocks') {
-  watchdog("HATE", "<pre>".print_r($element, true)."</pre>");
     array_unshift($element['#element_validate'], 'actorscenter_lottery_field_lottery_time_blocks_validate');
+    $new_tr_validate = array(); // XXX strip out date_combo_validate and call explicitly from our own callback, *after* we've fudged the values
+    foreach ($element['field_time_range'][LANGUAGE_NONE][0]['#element_validate'] as $callback){
+      if($callback != "date_combo_validate"){
+	$new_tr_validate[] = $callback;
+      }
+    }
+    $element['field_time_range'][LANGUAGE_NONE][0]['#element_validate'] = $new_tr_validate;
+    watchdog("lottery", "mangled field_lottery_time_blocks validators <pre>".print_r($element, true)."</pre>");
+  }
+}
+
+/**
+ * Make sure the ends of our audition time blocks are on the same days as their
+ * respective beginnings (really we're just collecting the time bit).
+ * 
+ * It seems we have to account for Date fields being stored in any number of
+ * formats (flat strftime()-style strings, arrays of strings representing
+ * date and time separately, or DateTime objects). Whoever wrote this crap is
+ * the first one up against the wall when the revolution comes.
+ */
+function _actorscenter_lottery_datefield_sync_dates(&$datefield){
+  $date1 = "";
+  if(is_object($datefield['value'])){
+    $date1 = strtotime($datefield['value']);
+  } elseif(is_array($datefield['value'])){
+    $date1 = strtotime($datefield['value']['date']);
+  } else {
+    $date1 = strtotime($datefield['value']);
+//    $date1 = preg_replace("/\s.*/", "", $datefield['value'];
+  }
+
+  if(is_object($datefield['value2'])){
+    $datefield['value2']->setDate(date('Y', $date1), date('m', $date1), date('d', $date1));
+  } elseif(is_array($datefield['value2'])){
+    $datefield['value2']['date'] = $datefield['value']['date'];
+  } else {
+    $date2 = strtotime($datefield['value2']);
+    $datefield['value2'] = date('Y-m-d', $date1)." ".date('H:i:s', $date2);
   }
 }
 
 function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$form_state, $form) {    
   $count = 0;
   drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+  watchdog("lottery", "Calling down the thunder in actorscenter_lottery_field_lottery_time_blocks_validate");
   while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
-    $date1 = $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value']['value']['date'];
-    form_set_value($form["field_lottery_time_blocks"][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0], array('#value' => array('value2' => array('date' => $date1))), $form_state);
+    // XXX This is the wrong way to do this, but form_set_value just doesn't
+    // fucking work
+    _actorscenter_lottery_datefield_sync_dates($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]);
+    _actorscenter_lottery_datefield_sync_dates($form_state['input']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]);
+
+    if(array_key_exists("entity", $form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count])){
+      _actorscenter_lottery_datefield_sync_dates($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['entity']->field_time_range[LANGUAGE_NONE][0]);
+    }
+
+
     $count++;
   }
+
+  // Now it should be safe to invoke date_combo_validate
+  _actorscenter_lottery_datefield_sync_dates($element['field_time_range'][LANGUAGE_NONE][0]['#value']);
+  $element['field_time_range'][LANGUAGE_NONE][0]['value2']['#value']['date'] = $element['field_time_range'][LANGUAGE_NONE][0]['value']['#value']['date'];
+  $element['field_time_range'][LANGUAGE_NONE][0]['value2']['date']['#value'] = $element['field_time_range'][LANGUAGE_NONE][0]['value']['date']['#value'];
+  date_combo_validate($element['field_time_range'][LANGUAGE_NONE][0], $form_state);
+
 }
 
 /**
@@ -67,17 +130,12 @@ function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$for
 function actorscenter_lottery_form_alter(&$form, $form_state, $form_id) {
   if($form_id == "lottery_audition_node_form"){
     drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+    drupal_add_js(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.js');
 
     array_unshift($form['#validate'], 'actorscenter_lottery_form_validate');
     $form['wrapper'] = array(
       '#prefix' => '<div id="lottery_form_wrapper">',
       '#suffix' => '</div>'
-    );
-    dpm($form);
-    $form['field_lottery_time_blocks']['#ajax'] = array(
-      'event' => 'change',
-      'callback' => '_actorscenter_lottery_timeblock_ajax',
-      'wrapper' => 'lottery_time_block'
     );
     $form['field_lottery_time_blocks']['wrapper'] = array(
       '#prefix' => '<div id="lottery_time_block">',
@@ -92,10 +150,6 @@ function actorscenter_lottery_form_alter(&$form, $form_state, $form_id) {
         'wrapper' => 'lottery_block_timerange_'.$count
       );
       */
-      $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['wrapper'] = array(
-	'#prefix' => '<div id="lottery_block_timerange_'.$count.'">',
-	'#suffix' => '</div>',
-      );
       $count++;
     }
   }
@@ -132,24 +186,21 @@ function actorscenter_lottery_form_validate($form, &$form_state){
   $count = 0;
   while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
     $css_id = "#lottery_block_timerange_$count";
-    if(!isset($form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value'])){
+    if(!isset($form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_lottery_audition_time_bloc'][LANGUAGE_NONE][0]['#value'])){
       break;
     }
-    $value = $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value'];
-    $date1 = $value['value']['date']." ".$value['value']['time'];
-    // Yes, we're using the start time's date value on purpose. We don't ever
-    // cross midnight with a single time block, so we effectively ignore the
-    // (hidden) second date field, only using the time.
-    $value['value2']['date'] = $value['value']['date'];
-    $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value']['value2']['date'] = $value['value']['date'];
-    $date2 = $value['value2']['date']." ".$value['value2']['time'];
-    form_set_value($form['field_lottery_time_blocks'], array(LANGUAGE_NONE => array(0 => array('field_time_range' => array(LANGUAGE_NONE => array(0 => array('#value' => array('value2' => array('date' => $value['value']['date'])))))))), $form_state);
     $form_elt = "field_lottery_time_blocks][".LANGUAGE_NONE."][$count][field_time_range][und";
-    if((strtotime($date2) - strtotime($date1))/3600 > 12){
+
+    $date1 = $form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['value'];
+    $date2 = $form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['value2'];
+watchdog("lottery", "<pre>".print_r($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0], true)."</pre>");
+/*
+    if(($end - $start)/3600 > 12){
       form_set_error($form_elt, "Time blocks cannot span more than 12 hours");
-    } elseif(strtotime($date2) <= strtotime($date1)){
-      form_set_error($form_elt, "End time must be after start time");
+    } elseif($duration < 0.25) {
+      form_set_error($form_elt, "Duration must be 0.25 (15 minutes) or greater");
     }
+    */
     $count++;
   }
 }
