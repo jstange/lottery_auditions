@@ -57,6 +57,9 @@
       foreach ($items as $delta => $item):
     ?>
   <?php
+  if(!array_key_exists('entity', $item)){
+    continue;
+  }
   $realitem = array_pop($item['entity']['field_collection_item']);
   $cur_start = strtotime($realitem['field_time_range']['#items'][0]['value']);
   $cur_end = strtotime($realitem['field_time_range']['#items'][0]['value2']);

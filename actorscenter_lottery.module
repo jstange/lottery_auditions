@@ -23,10 +23,10 @@ function actorscenter_lottery_help($path, $arg) {
 /**
  * Implements hook_menu().
  */
-/*
 function actorscenter_lottery_menu() {
   $items = array();
 
+/*
   $items['admin/config/content/actorscenter_lottery'] = array(
     'title' => 'Imagefield Exact Dimensions',
     'description' => 'Allow a content type to require one of a list of exact image dimensions in Image fields.',
@@ -35,10 +35,64 @@ function actorscenter_lottery_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
+  */
+  $items['lottery_signup'] = array(
+    'title' => 'Lottery Audition Signups',
+    'description' => 'Sign up for pending lottery auditions.',
+    'page callback' => 'lottery_audition_signup_page',
+    'access callback' => 'user_is_logged_in', // XXX should have a callback that checks against a configured list of roles to do the thing... actually, define a permission and have site maintainers grant it to appropriate roles
+  );
 
   return $items;
 }
-*/
+
+function lottery_audition_signup_page(){
+  $lotteries = node_load_multiple(array(), array('type' => "lottery_audition"));
+dpm($lotteries);
+#XXX skip lotteries that've already happened
+#XXX skip unpublished lotteries
+#XXX if signups are closed but the auditions haven't happened, indicate that
+#XXX if nothing meets above criteria, display a helpful message
+
+  $output = array();
+  $output['#markup'] = "";
+  foreach ($lotteries as $nid => $lottery){
+    $output['#markup'] .= drupal_render(drupal_get_form('lottery_signup_'.$nid, $nid, $lottery));
+  }
+
+  return $output;
+}
+
+function _actorscenter_lottery_form_builder($form, &$form_state, $args){
+  $nid = $args[1];
+  $lottery = $args[1];
+  $form['lottery_signup_derp'] = array(
+    '#type' => 'fieldset',
+    '#title' => t($lottery->title),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    'submit' => array(
+      '#type' => 'submit',
+      '#value' => t($lottery->title),
+    )
+  );
+# XXX time blocks: checkbox with a little clicky calendar style whoozit, should work interchangeably. THE COLORS, CHILDREN.
+  return($form);
+}
+
+function actorscenter_lottery_forms($form_id, $args) {
+  if(!preg_match("/^lottery_signup_\d+$/", $form_id) || count($args) != 2){
+    return;
+  }
+  $nid = $args[0];
+  $lottery = $args[1];
+
+  $forms['lottery_signup_'.$nid] = array(
+    'callback' => '_actorscenter_lottery_form_builder',
+    'callback arguments' => array($args)
+  );
+  return $forms;
+}
 
 /*
 function actorscenter_lottery_theme($existing, $type, $theme, $path) {
