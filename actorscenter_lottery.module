@@ -1,6 +1,8 @@
 <?php
 
 drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+drupal_add_js(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.js');
+
 
 /**
  * Implements hook_help().
@@ -48,7 +50,6 @@ function actorscenter_lottery_menu() {
 
 function lottery_audition_signup_page(){
   $lotteries = node_load_multiple(array(), array('type' => "lottery_audition"));
-dpm($lotteries);
 #XXX skip lotteries that've already happened
 #XXX skip unpublished lotteries
 #XXX if signups are closed but the auditions haven't happened, indicate that
@@ -63,19 +64,104 @@ dpm($lotteries);
   return $output;
 }
 
+function actorscenter_lottery_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['lottery_audition_signup_form'] = array(
+    'label' => t('Lottery Audition Signup Form'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['field_collection_item']['view modes']['lottery_audition_signup_form'] = array(
+    'label' => t('Lottery Audition Signup Form'),
+    'custom settings' => TRUE,
+  );
+}
+
 function _actorscenter_lottery_form_builder($form, &$form_state, $args){
-  $nid = $args[1];
+  global $user;
+  $nid = $args[0];
   $lottery = $args[1];
-  $form['lottery_signup_derp'] = array(
+  $ext_requests = db_select('lottery_audition_signups', 's')
+    ->fields('s', array('availability', 'placement'))
+    ->condition('nid', $nid)
+    ->condition('uid', $user->uid)
+    ->execute()
+    ->fetchAssoc();
+  $availability = null;
+  $submit_text = t('Sign Up');
+  if(count($ext_requests) > 0){
+    $availability = unserialize($ext_requests['availability']);
+    $submit_text = t('Update My Availability');
+  }
+  $timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
+  $address = "<div class='lottery_audition_address'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_address'))."</div>";
+  $instructions = "<div class='lottery_audition_instructions'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_special_instructio'))."</div>";
+  $deadline = "<div class='lottery_audition_instructions'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_signup_de'))."</div>";
+  $form['lottery_signup_fieldset'] = array(
+    '#prefix' => "<h2>".t($lottery->title)."</h2>",
     '#type' => 'fieldset',
     '#title' => t($lottery->title),
+    '#title_display' => 'before',
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
+    '#attributes' => array('class' => array('lottery_audition_signup_wrapper')),
+    'lottery_id' => array(
+      '#type' => 'hidden',
+      '#value' => $nid
+    ),
+    'info_panel' => array(
+      '#type' => 'fieldset',
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+      '#attributes' => array('class' => array('lottery_audition_signup_dummy_panel')),
+      '#suffix' => "<div class='lottery_audition_infoblock'>".$address.$instructions."</div><div class='lottery_audition_infoblock'>Indicate your availability below and click <strong>Sign Up</strong> to be eligible to audition. $deadline</div>" // XXX this message should be configurable
+    ),
     'submit' => array(
       '#type' => 'submit',
-      '#value' => t($lottery->title),
+      '#weight' => 100,
+      '#attributes' => array('class' => array('lottery_signup_submit')),
+      '#value' => $submit_text,
     )
   );
+  $form['#attributes'] = array('class' => array('lottery_audition_signup'));
+  $form['#submit'] = array('lottery_audition_signup_submit_callback');
+  $form['#validate'] = array('lottery_audition_signup_validate_callback');
+  $count = 0;
+  $current_day = "";
+  while(array_key_exists($count, $timeblocks)){
+    $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
+    $checked = 0;
+    $paintbox_class = "lottery_audition_timeblock_paint_unchecked";
+    if($availability){
+      foreach ($availability as $ext_req){
+	if($ext_req == $realitem['field_time_range']['#items'][0]){
+	  $checked = 1;
+	  $paintbox_class = "lottery_audition_timeblock_paint_checked";
+	  break;
+	}
+      }
+    }
+    $times = field_view_field('field_collection_item', $realitem['field_time_range']['#object'], 'field_time_range', 'lottery_audition_signup_form');
+    $day = field_view_field('field_collection_item', $realitem['field_time_range']['#object'], 'field_time_range', 'full');
+    $current_day = strip_tags($day[0]['#markup']);
+    $print_day = "";
+    if(!array_key_exists($current_day, $form['lottery_signup_fieldset'])){
+      $print_day = "<h4 class='lottery_audition_timeblock_day_title'>$current_day</h4>";
+      $form['lottery_signup_fieldset'][$current_day] = array(
+	'#type' => 'fieldset',
+        '#collapsible' => FALSE,
+	'#collapsed' => FALSE,
+	'#attributes' => array('class' => array('lottery_audition_timeblock_day')),
+      );
+    }
+    $form['lottery_signup_fieldset'][$current_day]['timeblock_'.$count] = array(
+      '#type' => 'checkbox',
+      '#name' => $nid.'_timeblock_'.$count,
+      '#attributes' => array('class' => array('lottery_audition_timeblock_checkbox')),
+      '#prefix' => "$print_day<div id='${nid}_timeblock_$count' class='lottery_audition_timeblock'><div class='lottery_audition_timeblock_paint $paintbox_class'>".$times[0]['#markup']."</div>",
+      '#suffix' => "</div>"
+    );
+    $form['lottery_signup_fieldset'][$current_day]['timeblock_'.$count]['#default_value'] = $checked;
+    $count++;
+  }
 # XXX time blocks: checkbox with a little clicky calendar style whoozit, should work interchangeably. THE COLORS, CHILDREN.
   return($form);
 }
@@ -92,6 +178,51 @@ function actorscenter_lottery_forms($form_id, $args) {
     'callback arguments' => array($args)
   );
   return $forms;
+}
+
+function lottery_audition_signup_validate_callback($form, &$form_state){
+  $count = 0;
+  $timeblocks = array();
+  $lottery_id = $form_state['input']['lottery_id'];
+  while (array_key_exists("timeblock_$count", $form_state['input'])){
+    if(array_key_exists("${lottery_id}_timeblock_$count", $form_state['input'])){
+      $timeblocks[] = $count;
+    }
+    $count++;
+  }
+  if(count($timeblocks) == 0){
+    form_set_error("", "You must sign up for at least one block of time");
+  }
+  return $form;
+}
+
+function lottery_audition_signup_submit_callback($form, &$form_state){
+  global $user;
+  print $user->uid;
+  $nid = $form_state['input']['lottery_id'];
+  $lottery = node_load($form_state['input']['lottery_id']);
+  $timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
+  $requested_blocks = array();
+  $count = 0;
+  while (array_key_exists($count, $timeblocks)){
+    if(array_key_exists("${nid}_timeblock_$count", $form_state['input'])){
+      $item = array_pop($timeblocks[$count]['entity']['field_collection_item']);
+      $requested_blocks[] = $item['field_time_range']['#items'][0];
+    }
+    $count++;
+  }
+  db_delete('lottery_audition_signups')
+    ->condition('nid', $form_state['input']['lottery_id'])
+    ->condition('uid', $user->uid)
+    ->execute();
+  db_insert('lottery_audition_signups')
+    ->fields(array(
+      'nid' => $form_state['input']['lottery_id'],
+      'uid' => $user->uid,
+      'availability' => serialize($requested_blocks)
+  ))
+  ->execute();
+  return $form;
 }
 
 /*
