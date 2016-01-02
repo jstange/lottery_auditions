@@ -38,6 +38,16 @@ function actorscenter_lottery_admin() {
     '#description' => t("The message to show on a lottery audition signup form when the lottery is open and the user has not yet signed up."),
     '#required' => TRUE,
   );
+  $form['lottery_auditions_signup_signedup_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Instructions to update an existing lottery signup'),
+    '#default_value' => variable_get('lottery_auditions_signup_signedup_message'),
+    '#cols' => 50,
+    '#rows' => 3,
+    '#maxlength' => 300,
+    '#description' => t("The message to show on a lottery audition signup form when the lottery is open and the user HAS signed up."),
+    '#required' => TRUE,
+  );
   $form['lottery_auditions_signup_closed_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Closed signup message'),
@@ -48,6 +58,7 @@ function actorscenter_lottery_admin() {
     '#description' => t("The message to show on a lottery audition signup form when the lottery is closed, the user has signed up, and the lottery has not yet been drawn."),
     '#required' => TRUE,
   );
+
   $form['lottery_auditions_signup_closed_nosignup_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Closed signup message for users who have not signed up'),
@@ -56,6 +67,35 @@ function actorscenter_lottery_admin() {
     '#rows' => 3,
     '#maxlength' => 300,
     '#description' => t("The message to show on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
+    '#required' => TRUE,
+  );
+
+  // XXX these need validation
+  $form['lottery_auditions_signup_open_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for open lotteries.'),
+    '#default_value' => variable_get('lottery_auditions_signup_open_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the lottery is open and the user has not yet signed up."),
+    '#required' => TRUE,
+  );
+  $form['lottery_auditions_signup_signedup_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for lotteries the user has entered.'),
+    '#default_value' => variable_get('lottery_auditions_signup_signedup_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the user HAS signed up."),
+    '#required' => TRUE,
+  );
+  $form['lottery_auditions_signup_closed_nosignup_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for closed lotteries.'),
+    '#default_value' => variable_get('lottery_auditions_signup_closed_nosignup_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
     '#required' => TRUE,
   );
 
@@ -214,17 +254,18 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
       '#value' => $submit_text,
     );
     if($availability != null){
-      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:blue;'>Lottery Pending</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:".variable_get('lottery_auditions_signup_signedup_color').";'>Lottery Pending</div>";
+      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_signedup_message', "")."</div></div>";
     } else {
-      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:green;'>Open</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:".variable_get('lottery_auditions_signup_open_color').";'>Open</div>";
+      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_open_message', "")."</div></div>";
     }
-    $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_open_message', "")."</div></div>";
   } else{
     if($availability != null){
-      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:blue;'>Lottery Pending</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:".variable_get('lottery_auditions_signup_signedup_color').";'>Lottery Pending</div>";
       $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_closed_message', "")."</div></div>";
     } else {
-      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:red;'>Closed</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:".variable_get('lottery_auditions_signup_closed_nosignup_color').";'>Closed</div>";
       $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_closed_nosignup_message', "")."</div></div>";
     }
   }
