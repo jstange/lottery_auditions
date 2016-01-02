@@ -78,6 +78,15 @@ form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_ti
   border:1px solid gray;
   color:black;
 }
+form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint_disabled {
+  cursor:not-allowed;
+  border:1px solid lightgray;
+  opacity: 0.6;
+}
+
+.lottery_audition_pending {
+  background-color:#eeff82;
+}
 
 form.lottery_audition_signup fieldset.lottery_audition_timeblock_day {
   display:inline-block;
@@ -98,6 +107,9 @@ form.lottery_audition_signup div.lottery_audition_instructions {
   text-align:left;
   float:left;
   padding-right:3em;
+}
+form.lottery_audition_signup div.lottery_audition_infoblock {
+  text-decoration: underline;
 }
 form.lottery_audition_signup div.lottery_audition_infoblock {
   clear:both;

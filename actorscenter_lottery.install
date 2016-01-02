@@ -13,6 +13,9 @@ function actorscenter_lottery_uninstall() {
   db_delete('date_format_type')
     ->condition('type', 'lottery_audition_full_date')
     ->execute();
+  foreach (array('date_format_lottery_audition_time', 'date_format_lottery_audition_full_date', 'lottery_auditions_signup_open_message', 'lottery_auditions_signup_closed_message', 'lottery_auditions_signup_closed_nosignup_message') as $var){
+    variable_del($var);
+  }
 }
 
 function actorscenter_lottery_install() {
@@ -47,6 +50,10 @@ function actorscenter_lottery_install() {
   ))
   ->execute();
   variable_set('date_format_lottery_audition_full_date', 'l F jS, Y');
+
+  variable_set('lottery_auditions_signup_open_message', t("Indicate your availability below and click <strong>Sign Up</strong> to be eligible to audition."));
+  variable_set('lottery_auditions_signup_closed_message', t("<strong>The signup deadline has passed, but you are already registered</strong>. Once auditioners have been selected, you will be notified of your status."));
+  variable_set('lottery_auditions_signup_closed_nosignup_message', t("<strong>The signup deadline has passed</strong>."));
 
   /*
   $t = get_t();
