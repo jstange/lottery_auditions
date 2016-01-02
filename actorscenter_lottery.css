@@ -101,23 +101,61 @@ form.lottery_audition_signup fieldset.lottery_audition_timeblock_day h4.lottery_
   display:block;
   font-weight:bold;
 }
-form.lottery_audition_signup div.lottery_audition_address,
-form.lottery_audition_signup div.lottery_audition_instructions {
-  display:inline-block;
-  text-align:left;
-  float:left;
-  padding-right:3em;
-}
-form.lottery_audition_signup div.lottery_audition_infoblock {
-  text-decoration: underline;
-}
 form.lottery_audition_signup div.lottery_audition_infoblock {
   clear:both;
   font-size:1.3em;
   display:inline-block;
-  width:100%;
+  width:90%;
   height:auto;
+  margin-bottom:1em;
+}
+form.lottery_audition_signup div.lottery_audition_address,
+form.lottery_audition_signup div.lottery_audition_instructions {
+  display:inline-block;
+  text-decoration:none;
+  text-align:left;
+  float:left;
+  padding-right:3em;
+}
+form.lottery_audition_signup div.lottery_audition_address {
+  width:35%;
+}
+form.lottery_audition_signup div.lottery_audition_instructions {
+  width:55%;
+}
+form.lottery_audition_signup div.lottery_audition_deadline {
+  width:40%;
+  float:left;
+}
+form.lottery_audition_signup div.lottery_audition_message {
+  text-decoration: underline;
+  float:left;
+  width:60%;
 }
 form.lottery_audition_signup fieldset.lottery_audition_signup_dummy_panel {
   display:none;
+}
+
+form.lottery_audition_signup div.lottery_audition_signup_banner {
+  position:absolute;
+  color:white;
+  vertical-align:middle;
+  text-align: center;
+  width:125px;
+  height:125px;
+  top: 0px;
+  right: 0px;
+  overflow:hidden;
+}
+form.lottery_audition_signup span.lottery_audition_signup_banner_text {
+  transform: rotate(45deg);
+  transform-origin: top left;
+  position:absolute;
+  width: 200px;
+  height: 36px;
+  line-height:36px;
+  top: -35px;
+  right: -96px;
+  font-size: 1.1em;
+  font-weight:bold;
 }

@@ -1,6 +1,6 @@
 jQuery(document).ready(function ($) {
   $(".lottery_audition_timeblock_paint").click(function () {
-    if(!$(this.hasClass("lottery_audition_timeblock_paint_disabled"))){
+    if(!$(this).hasClass("lottery_audition_timeblock_paint_disabled")){
       if($(this).hasClass("lottery_audition_timeblock_paint_unchecked")){
         $(this).removeClass("lottery_audition_timeblock_paint_unchecked");
         $(this).addClass("lottery_audition_timeblock_paint_checked");

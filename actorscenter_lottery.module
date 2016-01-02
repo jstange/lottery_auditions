@@ -120,7 +120,7 @@ function _lottery_audition_sort_by_date($a, $b){
   list($a_start, $a_end) = _lottery_audition_get_times($a);
   list($b_start, $b_end) = _lottery_audition_get_times($b);
 
-  return ($a_start < $b_start) ? -1 : 1;
+  return ($a_start < $b_start) ? 1 : -1;
 }
 
 function lottery_audition_signup_page(){
@@ -165,16 +165,19 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
     ->fetchAssoc();
   $availability = null;
   $submit_text = t('Sign Up');
-  if(count($ext_requests) > 0){
+  if(count($ext_requests) > 0 && is_array($ext_requests) && array_key_exists('availability', $ext_requests)){
     $availability = unserialize($ext_requests['availability']);
-    $submit_text = t('Update My Availability');
+    if(count($availability)  > 0){
+      $submit_text = t('Update My Availability');
+    }
   }
   $timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
   $address = "<div class='lottery_audition_address'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_address'))."</div>";
   $instructions = "<div class='lottery_audition_instructions'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_special_instructio'))."</div>";
-  $deadline = "<div class='lottery_audition_instructions'>".drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_signup_de'))."</div>";
+  $deadline = drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_signup_de'));
   $deadline_str = field_view_field('node', $lottery, 'field_lottery_audition_signup_de');
   $deadline_time = strtotime($deadline_str['#items'][0]['value']);
+  $banner_text = "";
   if(time() >= $deadline_time){
     $disabled = true;
   }
@@ -202,6 +205,7 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
   $form['#submit'] = array('lottery_audition_signup_submit_callback');
   $form['#validate'] = array('lottery_audition_signup_validate_callback');
 //  list($start, $end) = _lottery_audition_get_times($lottery);
+  $banner = "";
   if(!$disabled){
     $form['lottery_signup_fieldset']['submit'] = array(
       '#type' => 'submit',
@@ -209,14 +213,22 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
       '#attributes' => array('class' => array('lottery_signup_submit')),
       '#value' => $submit_text,
     );
-    $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'>".variable_get('lottery_auditions_signup_open_message', "")." $deadline</div>";
+    if($availability != null){
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:blue;'>Lottery Pending</div>";
+    } else {
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:green;'>Open</div>";
+    }
+    $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_open_message', "")."</div></div>";
   } else{
     if($availability != null){
-      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'>$deadline ".variable_get('lottery_auditions_signup_closed_message', "")."</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:blue;'>Lottery Pending</div>";
+      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_closed_message', "")."</div></div>";
     } else {
-      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'>$deadline ".variable_get('lottery_auditions_signup_closed_nosignup_message', "")."</div>";
+      $banner = "<span class='lottery_audition_signup_banner_text' style='background-color:red;'>Closed</div>";
+      $form['lottery_signup_fieldset']['info_panel']['#suffix'] .= "<div class='lottery_audition_infoblock'><div class='lottery_audition_deadline'>$deadline</div><div class='lottery_audition_message'>".variable_get('lottery_auditions_signup_closed_nosignup_message', "")."</div></div>";
     }
   }
+  $form['lottery_signup_fieldset']['info_panel']['#prefix'] = "<div class='lottery_audition_signup_banner'>$banner</div>";
   $count = 0;
   $current_day = "";
   while(array_key_exists($count, $timeblocks)){
