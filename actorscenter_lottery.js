@@ -22,4 +22,34 @@ jQuery(document).ready(function ($) {
       paintblock.addClass("lottery_audition_timeblock_paint_unchecked");
     }
   });
+  $(".lottery_audition_slot_type_option").change(function() {
+    pattern = new RegExp('[^a-z]', 'g');
+    var classname = $(this).attr("name")+"_"+$(this).val().toLowerCase().replace(pattern, "_");
+    var paintblocks = "div."+$(this).attr("name")+"_paint";
+    var checkboxes = "input."+$(this).attr("name")+"_checkbox";
+    if(classname != "undefined_"){
+      if($(this).val() == "General"){
+	$(paintblocks).removeClass("lottery_audition_timeblock_paint_disabled");
+	$(checkboxes).removeAttr("disabled");
+      } else {
+	$(paintblocks).each( function( index, element ){
+	  if(!$(this).hasClass(classname)){
+	    $(this).addClass("lottery_audition_timeblock_paint_disabled");
+	    $(this).removeClass("lottery_audition_timeblock_paint_checked");
+	    $(this).addClass("lottery_audition_timeblock_paint_unchecked");
+	  } else {
+	    $(this).removeClass("lottery_audition_timeblock_paint_disabled");
+	  }
+	});
+	$(checkboxes).each( function( index, element ){
+	  if(!$(this).hasClass(classname)){
+	    $(this).prop("checked", false);
+	    $(this).attr("disabled", "disabled");
+	  } else {
+	    $(this).removeAttr("disabled");
+	  }
+        });
+      }
+    }
+  });
 }(jQuery));

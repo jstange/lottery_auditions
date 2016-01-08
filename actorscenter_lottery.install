@@ -19,7 +19,6 @@ function actorscenter_lottery_uninstall() {
 
   return system_settings_form($form);
 }
-}
 
 function actorscenter_lottery_install() {
   db_insert('date_formats')
@@ -104,6 +103,11 @@ function actorscenter_lottery_schema() {
         'type' => 'text',
         'not null' => TRUE,
 	'serialize' => TRUE,
+      ),
+      'slot_type' => array(
+	'description' => "The type of audition slot the auditioner has requested, if applicable",
+        'type' => 'text',
+        'not null' => FALSE,
       ),
       'uid' => array(
 	'description' => "The uid of the auditioner",
