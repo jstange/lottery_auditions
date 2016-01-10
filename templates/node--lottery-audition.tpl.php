@@ -100,15 +100,17 @@
 
   <div class="content"<?php print $content_attributes; ?>>
     <?php
+    if($audition_signup_form){
+      print render($audition_signup_form);
+    } else{
       // We hide the comments and links now so that we can render them later.
       hide($content['comments']);
       hide($content['field_lottery_time_blocks']);
       hide($content['links']);
       print render($content);
+    }
     ?>
   </div>
-
   <?php print render($content['links']); ?>
   <?php print render($content['comments']); ?>
-
 </div>
