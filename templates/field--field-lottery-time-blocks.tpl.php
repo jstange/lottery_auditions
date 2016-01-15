@@ -48,32 +48,40 @@
 <?php
 //echo $element['#view_mode'];
 ?>
+<?php
+// XXX this isn't getting set correctly, for reasons unknown
+$label_hidden = true;
+?>
   <?php if (!$label_hidden): ?>
     <div class="field-label"<?php print $title_attributes; ?>><?php print $label ?>:&nbsp;</div>
   <?php endif; ?>
   <div class="field-items"<?php print $content_attributes; ?>>
-    <?php
-      $start = $end = null;
-      foreach ($items as $delta => $item):
-    ?>
-  <?php
+<?php
+$start = $end = null;
+foreach ($items as $delta => $item):
+?>
+<?php
   if(!array_key_exists('entity', $item)){
     continue;
   }
-  $realitem = array_pop($item['entity']['field_collection_item']);
-  $cur_start = strtotime($realitem['field_time_range']['#items'][0]['value']);
-  $cur_end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
-  if ($start == null || $cur_start < $start){
-    $start = $cur_start;
-  }
-  if ($end == null || $cur_end > $end){
-    $end = $cur_end;
-  }
-  // render($item);
-  ?>
-    <?php
-      endforeach;
-      print date("l F dS, Y", $start)." - ".date("l F dS, Y", $end);
-    ?>
+$realitem = array_pop($item['entity']['field_collection_item']);
+$cur_start = strtotime($realitem['field_time_range']['#items'][0]['value']);
+$cur_end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
+if ($start == null || $cur_start < $start){
+  $start = $cur_start;
+}
+if ($end == null || $cur_end > $end){
+  $end = $cur_end;
+}
+// render($item);
+?>
+<?php
+endforeach;
+$start_dt = new DateTime();
+$start_dt->setTimestamp($start);
+$end_dt = new DateTime();
+$end_dt->setTimestamp($end);
+print $start_dt->format("l F jS, Y")." - ".$end_dt->format("l F jS, Y");
+?>
   </div>
 </div>

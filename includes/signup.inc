@@ -9,7 +9,7 @@ $_lottery_audition_cached_times = array();
 function _lottery_audition_get_times($lottery){
   global $_lottery_audition_cached_times;
   if(is_array($_lottery_audition_cached_times) &&
-      array_key_exists($lottery->nid, $_lottery_audition_cached_times)){
+    array_key_exists($lottery->nid, $_lottery_audition_cached_times)){
     return $_lottery_audition_cached_times[$lottery->nid];
   }
   $timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
@@ -44,7 +44,7 @@ function _lottery_audition_timeblock_sort($a, $b){
   return ($a_start > $b_start) ? 1 : -1;
 }
 
-function lottery_audition_signup_page($nid){
+function lottery_audition_signup_page($nid = null){
   _audition_display_bits();
   if($nid){
     $lottery = node_load($nid);
@@ -60,7 +60,7 @@ function lottery_audition_signup_page($nid){
       // Skip auditions that are fully in the past or aren't yet published.
       list($start, $end) = _lottery_audition_get_times($lottery);
       if($end < time() || $lottery->status != NODE_PUBLISHED){
-	continue;
+        continue;
       }
       $output['#markup'] .= drupal_render(drupal_get_form('lottery_signup_'.$nid, $nid, $lottery));
     }
@@ -83,8 +83,7 @@ function actorscenter_lottery_entity_info_alter(&$entity_info) {
 }
 
 
-function _actorscenter_lottery_form_builder($form, &$form_state, $args){
-  _audition_display_bits();
+function _actorscenter_lottery_signup_form($form, &$form_state, $args){
   global $user;
   $nid = $args[0];
   $lottery = $args[1];
@@ -138,7 +137,7 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
   $form['#attributes'] = array('class' => array('lottery_audition_signup'));
   $form['#submit'] = array('lottery_audition_signup_submit_callback');
   $form['#validate'] = array('lottery_audition_signup_validate_callback');
-//  list($start, $end) = _lottery_audition_get_times($lottery);
+  //  list($start, $end) = _lottery_audition_get_times($lottery);
   $banner = "";
   if(!$disabled){
     $form['lottery_signup_fieldset']['submit'] = array(
@@ -177,7 +176,7 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
     array_push($realitems, $realitem);
     if(array_key_exists('field_restrict_audition_type', $realitem)){
       foreach ($realitem['field_restrict_audition_type']['#items'] as $item){
-	$aud_type_opts[$item['value']] = $item['value'];
+        $aud_type_opts[$item['value']] = $item['value'];
       }
     } else {
       $have_generic_slots = true;
@@ -202,12 +201,12 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
     $input_classes = array('lottery_audition_timeblock_checkbox', "${nid}_lottery_audition_slot_type_checkbox");
     if(array_key_exists('field_restrict_audition_type', $realitem)){
       foreach ($realitem['field_restrict_audition_type']['#items'] as $item){
-	$slottype_class = $nid.'_lottery_audition_slot_type_'.preg_replace("/[^a-z0-9]/", "_", strtolower($item['value']));
-	array_push($input_classes, $slottype_class);
-	$paintbox_class .= " $slottype_class";
-	if(!empty($slot_type) && $item['value'] == $slot_type){
-	  $matches_selected_slot_type = true;
-	}
+        $slottype_class = $nid.'_lottery_audition_slot_type_'.preg_replace("/[^a-z0-9]/", "_", strtolower($item['value']));
+        array_push($input_classes, $slottype_class);
+        $paintbox_class .= " $slottype_class";
+        if(!empty($slot_type) && $item['value'] == $slot_type){
+          $matches_selected_slot_type = true;
+        }
       }
     }
     if(count($aud_type_opts) > 0 && !$have_generic_slots && !$matches_selected_slot_type){
@@ -215,11 +214,11 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
     }
     if($availability && !$date_disabled){
       foreach ($availability as $ext_req){
-	if($ext_req == $realitem['field_time_range']['#items'][0]){
-	  $checked = 1;
-	  $paintbox_class = "lottery_audition_timeblock_paint_checked";
-	  break;
-	}
+        if($ext_req == $realitem['field_time_range']['#items'][0]){
+          $checked = 1;
+          $paintbox_class = "lottery_audition_timeblock_paint_checked";
+          break;
+        }
       }
     }
     $paintbox_class .= " ${nid}_lottery_audition_slot_type_paint";
@@ -230,11 +229,11 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
     if(!array_key_exists($current_day, $form['lottery_signup_fieldset'])){
       $print_day = "<h4 class='lottery_audition_timeblock_day_title'>$current_day</h4>";
       $form['lottery_signup_fieldset'][$current_day] = array(
-	'#type' => 'fieldset',
-	'#weight' => 5+$count,
+        '#type' => 'fieldset',
+        '#weight' => 5+$count,
         '#collapsible' => FALSE,
-	'#collapsed' => FALSE,
-	'#attributes' => array('class' => array('lottery_audition_timeblock_day')),
+        '#collapsed' => FALSE,
+        '#attributes' => array('class' => array('lottery_audition_timeblock_day')),
       );
     }
     $time_string = $times[0]['#markup'];
@@ -282,13 +281,13 @@ function _actorscenter_lottery_form_builder($form, &$form_state, $args){
 
 function actorscenter_lottery_forms($form_id, $args) {
   _audition_display_bits();
-  if(!preg_match("/^lottery_signup_\d+$/", $form_id) || count($args) != 2){
+  if(!preg_match("/^(lottery_signup|audition_mgmt)_\d+$/", $form_id) || count($args) != 2){
     return;
   }
   $nid = $args[0];
   $lottery = $args[1];
 
-  $forms['lottery_signup_'.$nid] = array(
+  $forms[$form_id] = array(
     'callback' => '_actorscenter_lottery_form_builder',
     'callback arguments' => array($args)
   );
@@ -344,8 +343,8 @@ function lottery_audition_signup_submit_callback($form, &$form_state){
       'uid' => $user->uid,
       'slot_type' => $slot_type,
       'availability' => serialize($requested_blocks)
-  ))
-  ->execute();
+    ))
+    ->execute();
   return $form;
 }
 
@@ -357,7 +356,7 @@ function actorscenter_lottery_field_widget_form_alter(&$element, &$form_state, $
     $new_tr_validate = array(); // XXX strip out date_combo_validate and call explicitly from our own callback, *after* we've fudged the values
     foreach ($element['field_time_range'][LANGUAGE_NONE][0]['#element_validate'] as $callback){
       if($callback != "date_combo_validate"){
-	$new_tr_validate[] = $callback;
+        $new_tr_validate[] = $callback;
       }
     }
     $element['field_time_range'][LANGUAGE_NONE][0]['#element_validate'] = $new_tr_validate;
@@ -367,7 +366,7 @@ function actorscenter_lottery_field_widget_form_alter(&$element, &$form_state, $
 /*
 function function actorscenter_lottery_views_default_views(){
 }
-*/
+ */
 
 /*
 function actorscenter_lottery_views_pre_render(&$view){
@@ -379,13 +378,14 @@ function actorscenter_lottery_views_post_render(&$view){
   dpm("post_render");
   dpm($view);
 }
-*/
+ */
 
 function actorscenter_lottery_page_alter(&$page){
+  _audition_display_bits();
   if($page && array_key_exists('content', $page) && array_key_exists('system_main', $page['content']) && array_key_exists('nodes', $page['content']['system_main'])){
     foreach ($page['content']['system_main']['nodes'] as $nid => $lottery){
       if($lottery && is_array($lottery) && $lottery['#bundle'] == "lottery_audition"){
-	$formbits = lottery_audition_signup_page($nid, $lottery);
+        $formbits = lottery_audition_signup_page($nid, $lottery);
         $page['content']['system_main']['nodes'][$nid] = $formbits;
       }
     }

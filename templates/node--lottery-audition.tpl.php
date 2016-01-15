@@ -100,7 +100,7 @@
 
   <div class="content"<?php print $content_attributes; ?>>
     <?php
-    if($audition_signup_form){
+    if($audition_signup_form && $view_mode == "lottery_audition_signup_form"){
       print render($audition_signup_form);
     } else{
       // We hide the comments and links now so that we can render them later.

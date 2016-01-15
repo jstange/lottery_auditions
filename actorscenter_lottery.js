@@ -6,7 +6,7 @@ jQuery(document).ready(function ($) {
         $(this).addClass("lottery_audition_timeblock_paint_checked");
         $(this).parent().find(".lottery_audition_timeblock_checkbox").prop("checked", true);
       } else {
-	$(this).removeClass("lottery_audition_timeblock_paint_checked");
+  $(this).removeClass("lottery_audition_timeblock_paint_checked");
         $(this).addClass("lottery_audition_timeblock_paint_unchecked");
         $(this).parent().find(".lottery_audition_timeblock_checkbox").prop("checked", false);
       }
@@ -29,27 +29,32 @@ jQuery(document).ready(function ($) {
     var checkboxes = "input."+$(this).attr("name")+"_checkbox";
     if(classname != "undefined_"){
       if($(this).val() == "General"){
-	$(paintblocks).removeClass("lottery_audition_timeblock_paint_disabled");
-	$(checkboxes).removeAttr("disabled");
+  $(paintblocks).removeClass("lottery_audition_timeblock_paint_disabled");
+  $(checkboxes).removeAttr("disabled");
       } else {
-	$(paintblocks).each( function( index, element ){
-	  if(!$(this).hasClass(classname)){
-	    $(this).addClass("lottery_audition_timeblock_paint_disabled");
-	    $(this).removeClass("lottery_audition_timeblock_paint_checked");
-	    $(this).addClass("lottery_audition_timeblock_paint_unchecked");
-	  } else {
-	    $(this).removeClass("lottery_audition_timeblock_paint_disabled");
-	  }
-	});
-	$(checkboxes).each( function( index, element ){
-	  if(!$(this).hasClass(classname)){
-	    $(this).prop("checked", false);
-	    $(this).attr("disabled", "disabled");
-	  } else {
-	    $(this).removeAttr("disabled");
-	  }
+  $(paintblocks).each( function( index, element ){
+    if(!$(this).hasClass(classname)){
+      $(this).addClass("lottery_audition_timeblock_paint_disabled");
+      $(this).removeClass("lottery_audition_timeblock_paint_checked");
+      $(this).addClass("lottery_audition_timeblock_paint_unchecked");
+    } else {
+      $(this).removeClass("lottery_audition_timeblock_paint_disabled");
+    }
+  });
+  $(checkboxes).each( function( index, element ){
+    if(!$(this).hasClass(classname)){
+      $(this).prop("checked", false);
+      $(this).attr("disabled", "disabled");
+    } else {
+      $(this).removeAttr("disabled");
+    }
         });
       }
     }
+  });
+  // XXX catch WINCH events however you do that
+  $("div.audition_signup_mgmt_form").each( function( index, element ){
+    $(this).siblings("div.audition_mgmt_unassigned_list").height($(this).outerHeight());
+    $(this).siblings("div.audition_mgmt_unassigned_list").css("height", $(this).outerHeight());
   });
 }(jQuery));

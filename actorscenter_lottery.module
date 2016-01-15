@@ -1,12 +1,13 @@
 <?php
 
 function _audition_display_bits(){
+  drupal_add_js(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.js', array('type' => 'file', 'scope' => 'footer'));
   drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
-  drupal_add_js(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.js', 'file');
 }
 
-module_load_include('signup.inc', 'actorscenter_lottery');
-module_load_include('content_type.inc', 'actorscenter_lottery');
+foreach (array("manage", "signup", "content_type") as $file){
+  module_load_include('inc', 'actorscenter_lottery', 'includes/'.$file);
+}
 
 /**
  * Implements hook_help().
@@ -21,11 +22,12 @@ module_load_include('content_type.inc', 'actorscenter_lottery');
 function actorscenter_lottery_help($path, $arg) {
   _audition_display_bits();
   switch ($path) {
-    case "admin/help#actorscenter_lottery":
-      return '<p>' . t("Content types and other code for AC's Lottery auditions") . '</p>';
-      break;
+  case "admin/help#actorscenter_lottery":
+    return '<p>' . t("Content types and other code for AC's Lottery auditions") . '</p>';
+    break;
   }
 }
+
 
 /**
  * Implements hook_menu().
@@ -108,6 +110,8 @@ function actorscenter_lottery_admin() {
   return system_settings_form($form);
 }
 
+
+
 /**
  * Implements hook_menu().
  */
@@ -115,13 +119,38 @@ function actorscenter_lottery_menu() {
   _audition_display_bits();
   $items = array();
 
-  $items['admin/config/people/lottery_auditions'] = array(
-    'title' => 'Lottery Auditions',
-    'description' => 'Configuration settings for the Lottery Auditions module.',
+  $items['admin/config/people/auditions'] = array(
+    'title' => 'Auditions',
+    'description' => 'Manage slot assignments and settings for the Auditions module.',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages')
+  );
+
+  $lotteries = node_load_multiple(array(), array('type' => "lottery_audition"));
+  uasort($lotteries, '_lottery_audition_sort_by_date');
+  foreach ($lotteries as $nid => $lottery){
+    list($start, $end) = _lottery_audition_get_times($lottery);
+    if($end < time()){
+      continue;
+    }
+    $items['admin/config/people/auditions/'.$nid] = array(
+      'title' => $lottery->title,
+      'description' => drupal_render(field_view_field('node', $lottery, 'field_lottery_time_blocks')),
+      'page callback' => 'actorscenter_lottery_manage',
+      'page arguments' => array(4),
+      'access arguments' => array('access administration pages'),
+      'type' => MENU_NORMAL_ITEM
+    );
+  }
+
+  $items['admin/config/people/auditions/audition_settings'] = array(
+    'title' => 'Global Audition Settings',
+    'weight' => -100,
+    'description' => 'Configuration settings for the Auditions module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('actorscenter_lottery_admin'),
     'access arguments' => array('access administration pages'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_NORMAL_ITEM
   );
 
   $items['lottery_signup'] = array(
@@ -142,7 +171,7 @@ function actorscenter_lottery_block_info() {
   );
   return $blocks;
 }
-*/
+ */
 
 
 /**
@@ -177,3 +206,23 @@ function actorscenter_lottery_preprocess_node(&$variables){
     $variables['audition_signup_form'] = lottery_audition_signup_page($variables['nid'], $variables['elements']);
   }
 }
+
+function _actorscenter_lottery_form_builder($form, &$form_state, $args){
+  _audition_display_bits();
+  if(preg_match("/^lottery_signup_\d+$/", $form_state['build_info']['form_id'])){
+    return(_actorscenter_lottery_signup_form($form, $form_state, $args));
+  } else if(preg_match("/^audition_mgmt_\d+$/", $form_state['build_info']['form_id'])){
+    return(_actorscenter_lottery_mgmt_form($form, $form_state, $args));
+  }
+  return($form);
+}
+
+function actorscenter_lottery_theme($existing, $type, $theme, $path){
+  $themes = array(
+    'actorscenter_lottery_components' => array(
+      'render element' => 'element'
+    ),
+  );
+  return $themes;
+}
+
