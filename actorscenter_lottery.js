@@ -57,4 +57,7 @@ jQuery(document).ready(function ($) {
     $(this).siblings("div.audition_mgmt_unassigned_list").height($(this).outerHeight());
     $(this).siblings("div.audition_mgmt_unassigned_list").css("height", $(this).outerHeight());
   });
+  $('div.form-item-interval select').change(function() {
+    $(this).closest('form').submit();
+  });
 }(jQuery));

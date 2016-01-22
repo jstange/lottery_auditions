@@ -22,35 +22,35 @@ function actorscenter_lottery_uninstall() {
 
 function actorscenter_lottery_install() {
   db_insert('date_formats')
-   ->fields(array(
-     'format' => 'g:ia',
-     'type' => 'lottery_audition_time',
-     'locked' => 0,
-  ))
-  ->execute();
+    ->fields(array(
+      'format' => 'g:ia',
+      'type' => 'lottery_audition_time',
+      'locked' => 0,
+    ))
+    ->execute();
   db_insert('date_format_type')
-   ->fields(array(
-     'type' => 'lottery_audition_time',
-     'title' => 'Lottery Audition (Time Only)',
-     'locked' => 0,
-  ))
-  ->execute();
+    ->fields(array(
+      'type' => 'lottery_audition_time',
+      'title' => 'Lottery Audition (Time Only)',
+      'locked' => 0,
+    ))
+    ->execute();
   variable_set('date_format_lottery_audition_time', 'g:ia');
 
   db_insert('date_formats')
-   ->fields(array(
-     'format' => 'l F jS, Y',
-     'type' => 'lottery_audition_full_date',
-     'locked' => 0,
-  ))
-  ->execute();
+    ->fields(array(
+      'format' => 'l F jS, Y',
+      'type' => 'lottery_audition_full_date',
+      'locked' => 0,
+    ))
+    ->execute();
   db_insert('date_format_type')
-   ->fields(array(
-     'type' => 'lottery_audition_full_date',
-     'title' => 'Lottery Audition (Full Date)',
-     'locked' => 0,
-  ))
-  ->execute();
+    ->fields(array(
+      'type' => 'lottery_audition_full_date',
+      'title' => 'Lottery Audition (Full Date)',
+      'locked' => 0,
+    ))
+    ->execute();
   variable_set('date_format_lottery_audition_full_date', 'l F jS, Y');
 
   variable_set('lottery_auditions_signup_open_message', t("Indicate your availability below and click <strong>Sign Up</strong> to be eligible to audition."));
@@ -81,7 +81,7 @@ function actorscenter_lottery_install() {
   );
   node_types_rebuild();
   menu_rebuild();
-  */
+   */
 }
 
 /*
@@ -93,30 +93,30 @@ function actorscenter_lottery_schema() {
     'description' => t('Lottery auditions.'),
     'fields' => array(
       'nid' => array(
-	'description' => "The node ID of the lottery audition in which the auditioner requested a slot",
+        'description' => "The node ID of the lottery audition in which the auditioner requested a slot",
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE
       ),
       'availability' => array(
-	'description' => "Available time slots selected by the auditioner, stored as serialized strings",
+        'description' => "Available time slots selected by the auditioner, stored as serialized strings",
         'type' => 'text',
         'not null' => TRUE,
-	'serialize' => TRUE,
+        'serialize' => TRUE,
       ),
       'slot_type' => array(
-	'description' => "The type of audition slot the auditioner has requested, if applicable",
+        'description' => "The type of audition slot the auditioner has requested, if applicable",
         'type' => 'text',
         'not null' => FALSE,
       ),
       'uid' => array(
-	'description' => "The uid of the auditioner",
+        'description' => "The uid of the auditioner",
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE
       ),
       'placement' => array(
-	'description' => "0 for no slot, 1 for accepted, 2 for wait list, 3 for declined",
+        'description' => "0 for no slot, 1 for accepted, 2 for wait list, 3 for declined",
         'type' => 'int',
         'not null' => FALSE
       )

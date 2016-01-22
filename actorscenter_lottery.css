@@ -266,16 +266,16 @@ fieldset.audition_mgmt_slot_entry  > div.fieldset-wrapper {
 div.audition_waitlist fieldset.audition_mgmt_waitlist_entry div.fieldset-wrapper {
   display:none;
 }
-div.audition_reject_mgmt_form fieldset.reject {
+div.audition_signup_mgmt_wholeform .reject {
   background-color:LightPink;
 }
-div.audition_signup_mgmt_form fieldset.audition-mgmt-group-block .saved {
+div.audition_signup_mgmt_wholeform .saved {
   background-color:PaleGreen;
 }
-div.audition_signup_mgmt_form fieldset.audition-mgmt-group-block .unsaved {
+div.audition_signup_mgmt_wholeform .unsaved {
   background-color:LightGoldenRodYellow;
 }
-div.audition_signup_mgmt_form fieldset.audition-mgmt-group-block .unassigned {
+div.audition_signup_mgmt_wholeform .unassigned {
   background-color:WhiteSmoke;
 }
 div.audition_signup_mgmt_form fieldset.unsaved legend .audition_mgmt_table_auditioner_label:before {
@@ -363,7 +363,61 @@ div.audition_reject_mgmt_form > fieldset > div.fieldset-wrapper {
   clear:both;
   position:relative;
 }
+div.audition_signup_mgmt_slots,
+div.audition_signup_mgmt_instructions {
+  position:relative;
+  display:block;
+  width:100%;
+}
+div.audition_signup_mgmt_instructions {
+  position:relative;
+  display:inline-block;
+  width:100%;
+  clear:both;
+}
+div.audition_signup_mgmt_instructions > div#edit-instructions,
+div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs {
+  display:inline-block;
+  margin-bottom:2em;
+  position:relative;
+}
+div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs {
+  width:53%;
+  position:absolute;
+  white-space:normal;
+  bottom:0px;
+  right:0px;
+  float:right;
+}
+div.audition_signup_mgmt_instructions > div.form-item {
+  width:45%;
+  white-space:normal;
+  float:left;
+}
+div.audition_signup_mgmt_button_descs img {
+  max-width:1em;
+  max-height:1em;
+}
 div.audition_signup_mgmt_submit {
   font-size:small;
   display:block;
+  float:left;
+}
+
+div.audition_signup_mgmt_submit input.audition_signup_mgmt_bigbutton {
+  display:block;
+  margin-bottom:0px;
+  margin-top:1em;
+/*
+  position:relative;
+  padding:0px;
+  height:3em;
+  width:3em;
+  border:0.5em solid #e4e4e4;
+  border-left:2em solid #e4e4e4;
+  border-right:2em solid #e4e4e4;
+  border-radius:0.5em;
+  vertical-align:middle;
+  box-shadow: 0.2em 0.2em 0.1em #888888;
+*/
 }
