@@ -1,0 +1,123 @@
+<?php
+
+function auditioneer_uninstall() {
+  db_delete('date_formats')
+    ->condition('type', 'auditioneer_time')
+    ->execute();
+  db_delete('date_formats')
+    ->condition('type', 'auditioneer_full_date')
+    ->execute();
+  db_delete('date_format_type')
+    ->condition('type', 'auditioneer_time')
+    ->execute();
+  db_delete('date_format_type')
+    ->condition('type', 'auditioneer_full_date')
+    ->execute();
+  foreach (array('date_format_auditioneer_time', 'date_format_auditioneer_full_date', 'auditioneer_signup_open_message', 'auditioneer_signup_closed_message', 'auditioneer_signup_closed_nosignup_message', 'auditioneer_signup_signedup_message', 'auditioneer_signup_open_color', 'auditioneer_signup_signedup_color', 'auditioneer_signup_closed_nosignup_color') as $var){
+    variable_del($var);
+  }
+
+  return system_settings_form($form);
+}
+
+function auditioneer_install() {
+  db_insert('date_formats')
+    ->fields(array(
+      'format' => 'g:ia',
+      'type' => 'auditioneer_time',
+      'locked' => 0,
+    ))
+    ->execute();
+  db_insert('date_format_type')
+    ->fields(array(
+      'type' => 'auditioneer_time',
+      'title' => 'Audition (Time Only)',
+      'locked' => 0,
+    ))
+    ->execute();
+  variable_set('date_format_auditioneer_time', 'g:ia');
+
+  db_insert('date_formats')
+    ->fields(array(
+      'format' => 'l F jS, Y',
+      'type' => 'auditioneer_full_date',
+      'locked' => 0,
+    ))
+    ->execute();
+  db_insert('date_format_type')
+    ->fields(array(
+      'type' => 'auditioneer_full_date',
+      'title' => 'Audition (Full Date)',
+      'locked' => 0,
+    ))
+    ->execute();
+  variable_set('date_format_auditioneer_full_date', 'l F jS, Y');
+
+  variable_set('auditioneer_signup_open_message', t("Indicate your availability below and click <strong>Sign Up</strong> to be eligible to audition."));
+  variable_set('auditioneer_signup_closed_message', t("<strong>The signup deadline has passed, but you are already registered</strong>. Once auditioners have been selected, you will be notified of your status."));
+  variable_set('auditioneer_signup_closed_nosignup_message', t("<strong>The signup deadline has passed</strong>."));
+  variable_set('auditioneer_signup_signedup_message', t("<strong>You are already registered</strong>. You may update your availability below at any point until the signup deadline has passed. Once auditioners have been selected, you will be notified of your status."));
+  variable_set('auditioneer_signup_open_color', 'LimeGreen');
+  variable_set('auditioneer_signup_signedup_color', 'CornflowerBlue');
+  variable_set('auditioneer_signup_closed_nosignup_color', 'LightCoral');
+
+  variable_set('auditioneer_signup_open_banner', 'Open');
+  variable_set('auditioneer_signup_signedup_banner', 'Pending');
+  variable_set('auditioneer_signup_closed_nosignup_banner', 'Closed');
+
+  variable_set('auditioneer_timeblock_checked_text', 'black');
+  variable_set('auditioneer_timeblock_checked', 'PaleGreen');
+  variable_set('auditioneer_timeblock_unchecked_text', 'white');
+  variable_set('auditioneer_timeblock_unchecked', 'LightPink');
+
+  variable_set('auditioneer_signup_path', 'audition_signup');
+ /* 
+  node_types_rebuild();
+  menu_rebuild();
+   */
+}
+
+/*
+ * An audition is just a regular piece of content with some known
+ * fields, but we'll want to track user request to sign up for them.
+ */
+function auditioneer_schema() {
+  $schema['auditioneer_signups'] = array(
+    'description' => t('Auditions'),
+    'fields' => array(
+      'nid' => array(
+        'description' => "The node ID of the audition in which the auditioner requested a slot",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'availability' => array(
+        'description' => "Available time slots selected by the auditioner, stored as serialized strings",
+        'type' => 'text',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+      'slot_type' => array(
+        'description' => "The type of audition slot the auditioner has requested, if applicable",
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'uid' => array(
+        'description' => "The uid of the auditioner",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'placement' => array(
+        'description' => "0 for no slot, 1 for accepted, 2 for wait list, 3 for declined",
+        'type' => 'int',
+        'not null' => FALSE
+      )
+    ),
+    'foreign keys' => array(
+      'uid' => array('users' => 'uid'),
+      'nid' => array('node' => 'nid')
+    )
+  );
+  return $schema;
+}

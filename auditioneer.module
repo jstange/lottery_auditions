@@ -1,0 +1,311 @@
+<?php
+
+function _auditioneer_display_bits(){
+  drupal_add_js(drupal_get_path('module', 'auditioneer') . '/auditioneer.js', array('type' => 'file', 'scope' => 'footer'));
+  drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+  $settings = array(
+    'timeblock_checked' => variable_get('auditioneer_timeblock_checked', "PaleGreen"),
+    'timeblock_unchecked' => variable_get('auditioneer_timeblock_unchecked', "LightPink"),
+    'timeblock_checked_text' => variable_get('auditioneer_timeblock_checked_text', "black"),
+    'timeblock_unchecked_text' => variable_get('auditioneer_timeblock_unchecked_text', "white"),
+  );
+  drupal_add_js(array('auditioneer' => $settings), 'setting');
+}
+
+foreach (array("manage", "signup", "content_type") as $file){
+  module_load_include('inc', 'auditioneer', 'includes/'.$file);
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path 
+ *   Which path of the site we're using to display help
+ * @param arg 
+ *   Array that holds the current path as returned from arg() function
+ */
+function auditioneer_help($path, $arg) {
+  _auditioneer_display_bits();
+  switch ($path) {
+  case "admin/help#auditioneer":
+    return '<p>' . t("Content types and other code for auditions") . '</p>';
+    break;
+  }
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function auditioneer_admin() {
+  _auditioneer_display_bits();
+  $form = array();
+
+  $form['auditioneer_signup_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Signup page path'),
+    '#default_value' => variable_get('auditioneer_signup_path'),
+    '#description' => t("The path to the signup page where all pending lotteries will be visible to users (currently <a href='/".variable_get('auditioneer_signup_path')."'>/".variable_get('auditioneer_signup_path')."</a>). <strong>You may need to clear the site cache for changes to this variable to take effect.</strong>"),
+    '#required' => TRUE
+  );
+
+  $form['auditioneer_messaging'] = array(
+    '#type' => 'fieldset',
+    '#collapsed' => true,
+    '#collapsible' => true,
+    '#title' => "Signup Form Messages"
+  );
+  $form['auditioneer_messaging']['auditioneer_signup_open_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Open signup instructions'),
+    '#default_value' => variable_get('auditioneer_signup_open_message'),
+    '#cols' => 50,
+    '#rows' => 3,
+    '#maxlength' => 300,
+    '#description' => t("The message to show on an audition signup form when the signups are open and the user has not yet signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_messaging']['auditioneer_signup_signedup_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Instructions to update an existing audition signup'),
+    '#default_value' => variable_get('auditioneer_signup_signedup_message'),
+    '#cols' => 50,
+    '#rows' => 3,
+    '#maxlength' => 300,
+    '#description' => t("The message to show on an audition signup form when the signups are open and the user HAS signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_messaging']['auditioneer_signup_closed_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Closed signup message'),
+    '#default_value' => variable_get('auditioneer_signup_closed_message'),
+    '#cols' => 50,
+    '#rows' => 3,
+    '#maxlength' => 300,
+    '#description' => t("The message to show on an audition signup form when the signups are closed, the user has signed up, and the assignments have not yet been drawn."),
+    '#required' => TRUE,
+  );
+
+  $form['auditioneer_messaging']['auditioneer_signup_closed_nosignup_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Closed signup message for users who have not signed up'),
+    '#default_value' => variable_get('auditioneer_signup_closed_nosignup_message'),
+    '#cols' => 50,
+    '#rows' => 3,
+    '#maxlength' => 300,
+    '#description' => t("The message to show on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
+    '#required' => TRUE,
+  );
+
+  // XXX CSS needs validation
+  $form['auditioneer_corner_banner'] = array(
+    '#type' => 'fieldset',
+    '#collapsed' => true,
+    '#collapsible' => true,
+    '#title' => "Signup Form Corner Banner Styling"
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_open_banner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner text for open lotteries.'),
+    '#default_value' => variable_get('auditioneer_signup_open_banner'),
+    '#size' => 20,
+    '#maxlength' => 15,
+    '#description' => t("The text for the corner banner on a lottery audition signup form when the lottery is open and the user has not yet signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_open_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for open lotteries.'),
+    '#default_value' => variable_get('auditioneer_signup_open_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the lottery is open and the user has not yet signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_signedup_banner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner text for lotteries the user has entered.'),
+    '#default_value' => variable_get('auditioneer_signup_signedup_banner'),
+    '#size' => 20,
+    '#maxlength' => 15,
+    '#description' => t("The text for the corner banner on a lottery audition signup form when the user HAS signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_signedup_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for lotteries the user has entered.'),
+    '#default_value' => variable_get('auditioneer_signup_signedup_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the user HAS signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_closed_nosignup_banner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner text for closed lotteries.'),
+    '#default_value' => variable_get('auditioneer_signup_closed_nosignup_banner'),
+    '#size' => 20,
+    '#maxlength' => 15,
+    '#description' => t("The text for the corner banner on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
+    '#required' => TRUE,
+  );
+  $form['auditioneer_corner_banner']['auditioneer_signup_closed_nosignup_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for closed lotteries.'),
+    '#default_value' => variable_get('auditioneer_signup_closed_nosignup_color'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#description' => t("The background color for the corner banner on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
+    '#required' => TRUE,
+  );
+
+  $form['auditioneer_timeblock'] = array(
+    '#type' => 'fieldset',
+    '#collapsed' => true,
+    '#collapsible' => true,
+    '#title' => "Signup Form Time Block Styling"
+  );
+  $form['auditioneer_timeblock']['auditioneer_timeblock_checked_text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Foreground color for time blocks the user has selected.'),
+    '#default_value' => variable_get('auditioneer_timeblock_checked_text'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#required' => TRUE,
+  );
+  $form['auditioneer_timeblock']['auditioneer_timeblock_checked'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Background color for time blocks the user has selected.'),
+    '#default_value' => variable_get('auditioneer_timeblock_checked'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#required' => TRUE,
+  );
+  $form['auditioneer_timeblock']['auditioneer_timeblock_unchecked_text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Foreground color for time blocks the user has NOT selected.'),
+    '#default_value' => variable_get('auditioneer_timeblock_unchecked_text'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#required' => TRUE,
+  );
+  $form['auditioneer_timeblock']['auditioneer_timeblock_unchecked'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Background color for time blocks the user has NOT selected.'),
+    '#default_value' => variable_get('auditioneer_timeblock_unchecked'),
+    '#size' => 15,
+    '#maxlength' => 20,
+    '#required' => TRUE,
+  );
+
+  return system_settings_form($form);
+}
+
+
+
+/**
+ * Implements hook_menu().
+ */
+function auditioneer_menu() {
+  _auditioneer_display_bits();
+  $items = array();
+
+  $items['admin/config/people/auditions'] = array(
+    'title' => 'Auditions',
+    'description' => 'Manage slot assignments and settings for the Auditions module.',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages')
+  );
+
+  $lotteries = node_load_multiple(array(), array('type' => "auditioneer_audition"));
+  uasort($lotteries, '_auditioneer_audition_sort_by_date');
+  foreach ($lotteries as $nid => $lottery){
+    list($start, $end) = _auditioneer_audition_get_times($lottery);
+    if($end < time()){
+      continue;
+    }
+    $items['admin/config/people/auditions/'.$nid] = array(
+      'title' => $lottery->title,
+      'description' => drupal_render(field_view_field('node', $lottery, 'field_lottery_time_blocks')),
+      'page callback' => 'auditioneer_manage',
+      'page arguments' => array(4),
+      'access arguments' => array('access administration pages'),
+      'type' => MENU_NORMAL_ITEM
+    );
+  }
+
+  $items['admin/config/people/auditions/audition_settings'] = array(
+    'title' => 'Global Audition Settings',
+    'weight' => -100,
+    'description' => 'Configuration settings for the Auditioneer module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('auditioneer_admin'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  $items[variable_get('auditioneer_signup_path')] = array(
+    'title' => 'Audition Signups',
+    'description' => 'Sign up for pending auditions.',
+    'page callback' => 'auditioneer_signup_page',
+    'access callback' => 'user_is_logged_in', // XXX should have a callback that checks against a configured list of roles to do the thing... actually, define a permission and have site maintainers grant it to appropriate roles
+  );
+
+  return $items;
+}
+
+
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function auditioneer_theme_registry_alter(&$theme_registry) {
+  _auditioneer_display_bits();
+  // Defined path to the current module.
+  $module_path = drupal_get_path('module', 'auditioneer')."/templates";
+  // Find all .tpl.php files in this module's folder recursively.
+  $template_file_objects = drupal_find_theme_templates($theme_registry, '.tpl.php', $module_path);
+  // Iterate through all found template file objects.
+  foreach ($template_file_objects as $key => $template_file_object) {
+    // If the template has not already been overridden by a theme.
+    if (!isset($theme_registry[$key]['theme path']) || !preg_match('#/themes/#', $theme_registry[$key]['theme path'])) {
+      // Alter the theme path and template elements.
+      $theme_registry[$key]['theme path'] = $module_path;
+      $theme_registry[$key] = array_merge($theme_registry[$key], $template_file_object);
+      $theme_registry[$key]['type'] = 'module';
+    }
+  }
+}
+
+/**
+ * Manipulate our plain old lottery object into a signup form for itself. This
+ * is what should always be displayed to end users, whatever the context (page,
+ * views, etc), so give the templatessomething they can render.
+ */
+function auditioneer_preprocess_node(&$variables){
+  if($variables['type'] == "auditioneer_audition"){
+    $variables['audition_signup_form'] = auditioneer_signup_page($variables['nid'], $variables['elements']);
+  }
+}
+
+function _auditioneer_form_builder($form, &$form_state, $args){
+  _auditioneer_display_bits();
+  if(preg_match("/^audition_signup_\d+$/", $form_state['build_info']['form_id'])){
+    return(_auditioneer_signup_form($form, $form_state, $args));
+  } else if(preg_match("/^audition_mgmt_\d+$/", $form_state['build_info']['form_id'])){
+    return(_auditioneer_mgmt_form($form, $form_state, $args));
+  }
+  return($form);
+}
+
+function auditioneer_theme($existing, $type, $theme, $path){
+  $themes = array(
+    'auditioneer_components' => array(
+      'render element' => 'element'
+    ),
+  );
+  return $themes;
+}
+

@@ -1,55 +1,60 @@
 /*
  * Make our date range displays less blocky and horrible.
  */
-.page-node-edit .field-name-field-time-range div.start-date-wrapper,
-.page-node-edit .field-name-field-time-range div.end-date-wrapper,
-.page-node-edit .field-name-field-time-range div.end-date-wrapper label,
-.page-node-edit .field-name-field-time-range div.end-date-wrapper div,
-.page-node-add .field-name-field-time-range div.start-date-wrapper,
-.page-node-add .field-name-field-time-range div.end-date-wrapper,
-.page-node-add .field-name-field-time-range div.end-date-wrapper label,
-.page-node-add .field-name-field-time-range div.end-date-wrapper div {
+.page-node-edit .field-name-field-auditioneer-timerange div.start-date-wrapper,
+.page-node-edit .field-name-field-auditioneer-timerange div.end-date-wrapper,
+.page-node-edit .field-name-field-auditioneer-timerange div.end-date-wrapper label,
+.page-node-edit .field-name-field-auditioneer-timerange div.end-date-wrapper div,
+.page-node-add .field-name-field-auditioneer-timerange div.start-date-wrapper,
+.page-node-add .field-name-field-auditioneer-timerange div.end-date-wrapper,
+.page-node-add .field-name-field-auditioneer-timerange div.end-date-wrapper label,
+.page-node-add .field-name-field-auditioneer-timerange div.end-date-wrapper div {
   clear:none;
   display:inline-block;
   width:auto;
   float:left;
 }
-.page-node-edit .field-name-field-time-range div.end-date-wrapper label,
-.page-node-add .field-name-field-time-range div.end-date-wrapper label {
+.page-node-edit .field-name-field-auditioneer-timerange div.end-date-wrapper label,
+.page-node-add .field-name-field-auditioneer-timerange div.end-date-wrapper label {
   vertical-align:middle;
+}
+
+.page-node-edit .field-name-field-auditioneer-restrict-slot div.description,
+.page-node-add .field-name-field-auditioneer-restrict-slot div.description {
+  white-space:normal;
 }
 
 /*
  * Hide the unnecessary second calendar popup for audition block time ranges,
  * which can never span more than one day.
  */
-.page-node-edit .field-name-field-time-range .end-date-wrapper .date-padding div:first-child,
-.page-node-add .field-name-field-time-range .end-date-wrapper .date-padding div:first-child {
+.page-node-edit .field-name-field-auditioneer-timerange .end-date-wrapper .date-padding div:first-child,
+.page-node-add .field-name-field-auditioneer-timerange .end-date-wrapper .date-padding div:first-child {
   display:none;
 }
 
-.page-content .node-lottery-audition .field-name-field-lottery-time-blocks {
+.page-content .node-auditioneer-audition .field-name-field-auditioneer-time-blocks {
   font-weight:bold;
   font-size:1.2em;
 }
-.page-content .node-lottery-audition .field-label {
+.page-content .node-auditioneer-audition .field-label {
   padding-top:0.5em;
 }
 
-form.lottery_audition_signup .lottery_signup_submit {
+form.auditioneer_audition_signup .audition_signup_submit {
   margin-top:3em;
   float:right;
   font-size:2.5em;
 }
 
-form.lottery_audition_signup div.lottery_audition_timeblock {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock {
   display: inline-block;
   clear:left;
 }
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_text,
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint,
-form.lottery_audition_signup div.lottery_audition_timeblock .checkbox,
-form.lottery_audition_signup div.lottery_audition_timeblock .checkbox input {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_text,
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_paint,
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .checkbox,
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .checkbox input {
   position:static;
   clear:both;
   text-align:center;
@@ -58,7 +63,7 @@ form.lottery_audition_signup div.lottery_audition_timeblock .checkbox input {
   margin-right:auto;
   font-size:1.3em;
 }
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_paint {
   height:2em;
   float:left;
   margin-bottom:0.2em;
@@ -69,27 +74,27 @@ form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_ti
   white-space:nowrap;
   cursor:pointer;
 }
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint_unchecked {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_paint_unchecked {
   background-color:LightPink;
   border:1px solid gray;
   color:white;
 }
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint_checked {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_paint_checked {
   background-color:PaleGreen;
   border:1px solid gray;
   color:black;
 }
-form.lottery_audition_signup div.lottery_audition_timeblock .lottery_audition_timeblock_paint_disabled {
+form.auditioneer_audition_signup div.auditioneer_audition_timeblock .auditioneer_audition_timeblock_paint_disabled {
   cursor:not-allowed;
   border:1px solid lightgray;
   opacity: 0.6;
 }
 
-.lottery_audition_pending {
+.auditioneer_pending {
   background-color:#eeff82;
 }
 
-form.lottery_audition_signup fieldset.lottery_audition_timeblock_day {
+form.auditioneer_audition_signup fieldset.auditioneer_audition_timeblock_day {
   display:inline-block;
   padding:1em !important;
   clear:none;
@@ -98,47 +103,47 @@ form.lottery_audition_signup fieldset.lottery_audition_timeblock_day {
   margin-top:0px;
 }
 
-form.lottery_audition_signup fieldset.lottery_audition_timeblock_day h4.lottery_audition_timeblock_day_title {
+form.auditioneer_audition_signup fieldset.auditioneer_audition_timeblock_day h4.auditioneer_audition_timeblock_day_title {
   font-size:1.5em;
   display:block;
   font-weight:bold;
 }
-form.lottery_audition_signup div.lottery_audition_infoblock {
+form.auditioneer_audition_signup div.auditioneer_audition_infoblock {
   clear:both;
   font-size:1.3em;
   display:inline-block;
-  width:90%;
+  width:95%;
   height:auto;
   margin-bottom:1em;
 }
-form.lottery_audition_signup div.lottery_audition_address,
-form.lottery_audition_signup div.lottery_audition_instructions {
+form.auditioneer_audition_signup div.auditioneer_audition_address,
+form.auditioneer_audition_signup div.auditioneer_audition_instructions {
   display:inline-block;
   text-decoration:none;
   text-align:left;
   float:left;
   padding-right:3em;
 }
-form.lottery_audition_signup div.lottery_audition_address {
+form.auditioneer_audition_signup div.auditioneer_audition_address {
   width:35%;
 }
-form.lottery_audition_signup div.lottery_audition_instructions {
-  width:55%;
+form.auditioneer_audition_signup div.auditioneer_audition_instructions {
+  width:50%;
 }
-form.lottery_audition_signup div.lottery_audition_deadline {
+form.auditioneer_audition_signup div.auditioneer_audition_deadline {
   width:40%;
   float:left;
 }
-form.lottery_audition_signup div.lottery_audition_message {
+form.auditioneer_audition_signup div.auditioneer_audition_message {
   text-decoration: underline;
   float:left;
   width:60%;
 }
-form.lottery_audition_signup fieldset.lottery_audition_signup_dummy_panel {
+form.auditioneer_audition_signup fieldset.auditioneer_audition_signup_dummy_panel {
   display:none;
 }
 
-form.lottery_audition_signup div.lottery_audition_signup_banner {
+form.auditioneer_audition_signup div.auditioneer_audition_signup_banner {
   position:absolute;
   color:white;
   vertical-align:middle;
@@ -149,7 +154,13 @@ form.lottery_audition_signup div.lottery_audition_signup_banner {
   right: 0px;
   overflow:hidden;
 }
-form.lottery_audition_signup span.lottery_audition_signup_banner_text {
+form.auditioneer_audition_signup fieldset.auditioneer_audition_signup_wrapper{
+  background-color:#f7f7f7;
+}
+form.auditioneer_audition_signup fieldset.auditioneer_audition_signup_wrapper > legend {
+  display:none;
+}
+form.auditioneer_audition_signup span.auditioneer_audition_signup_banner_text {
   transform: rotate(45deg);
   transform-origin: top left;
   position:absolute;
@@ -161,22 +172,24 @@ form.lottery_audition_signup span.lottery_audition_signup_banner_text {
   font-size: 1.1em;
   font-weight:bold;
 }
-form.lottery_audition_signup div.lottery_audition_slot_type_radios {
+form.auditioneer_audition_signup div.auditioneer_audition_slot_type_radios {
   font-size:1.3em;
   clear:both;
   display:block;
 }
 
-form.lottery_audition_signup div.lottery_audition_slot_type_radios .form-type-radios {
+form.auditioneer_audition_signup div.auditioneer_audition_slot_type_radios .form-type-radios {
   margin-bottom:0px;
+  margin-top:0px;
 }
-form.lottery_audition_signup div.lottery_audition_slot_type_radios .form-type-radios > label {
+form.auditioneer_audition_signup div.auditioneer_audition_slot_type_radios .form-type-radios > label {
   font-weight:bold;
+  margin-top:0px;
 }
-form.lottery_audition_signup div.lottery_audition_slot_type_radios div.form-item {
+form.auditioneer_audition_signup div.auditioneer_audition_slot_type_radios div.form-item {
   display:inline-block;
 }
-form.lottery_audition_signup span.form-required {
+form.auditioneer_audition_signup span.form-required {
   color:red;
 }
 

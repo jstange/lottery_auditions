@@ -9,7 +9,7 @@
  * date and time separately, or DateTime objects). Whoever wrote this crap is
  * the first one up against the wall when the revolution comes.
  */
-function _actorscenter_lottery_datefield_sync_dates(&$datefield){
+function _auditioneer_datefield_sync_dates(&$datefield){
   $date1 = "";
   if(is_object($datefield['value'])){
     $date1 = strtotime($datefield['value']);
@@ -30,17 +30,17 @@ function _actorscenter_lottery_datefield_sync_dates(&$datefield){
 }
 
 
-function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$form_state, $form) {    
+function auditioneer_field_auditioneer_time_blocks_validate($element, &$form_state, $form) {    
   $count = 0;
-  drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
-  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+  drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+  while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
     // XXX This is the wrong way to do this, but form_set_value just doesn't
     // fucking work
-    _actorscenter_lottery_datefield_sync_dates($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]);
-    _actorscenter_lottery_datefield_sync_dates($form_state['input']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]);
+    _auditioneer_datefield_sync_dates($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]);
+    _auditioneer_datefield_sync_dates($form_state['input']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]);
 
-    if(array_key_exists("entity", $form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count])){
-      _actorscenter_lottery_datefield_sync_dates($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['entity']->field_time_range[LANGUAGE_NONE][0]);
+    if(array_key_exists("entity", $form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count])){
+      _auditioneer_datefield_sync_dates($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['entity']->field_auditioneer_timerange[LANGUAGE_NONE][0]);
     }
 
 
@@ -48,10 +48,10 @@ function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$for
   }
 
   // Now it should be safe to invoke date_combo_validate
-  _actorscenter_lottery_datefield_sync_dates($element['field_time_range'][LANGUAGE_NONE][0]['#value']);
-  $element['field_time_range'][LANGUAGE_NONE][0]['value2']['#value']['date'] = $element['field_time_range'][LANGUAGE_NONE][0]['value']['#value']['date'];
-  $element['field_time_range'][LANGUAGE_NONE][0]['value2']['date']['#value'] = $element['field_time_range'][LANGUAGE_NONE][0]['value']['date']['#value'];
-  date_combo_validate($element['field_time_range'][LANGUAGE_NONE][0], $form_state);
+  _auditioneer_datefield_sync_dates($element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#value']);
+  $element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']['#value']['date'] = $element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']['#value']['date'];
+  $element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']['date']['#value'] = $element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']['date']['#value'];
+  date_combo_validate($element['field_auditioneer_timerange'][LANGUAGE_NONE][0], $form_state);
 
 }
 
@@ -59,28 +59,28 @@ function actorscenter_lottery_field_lottery_time_blocks_validate($element, &$for
 /**
  * Implements hook_form_alter().
  */
-function actorscenter_lottery_form_alter(&$form, $form_state, $form_id) {
-  _audition_display_bits();
-  if($form_id == "lottery_audition_node_form"){
-    drupal_add_css(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
-    drupal_add_js(drupal_get_path('module', 'actorscenter_lottery') . '/actorscenter_lottery.js');
+function auditioneer_form_alter(&$form, $form_state, $form_id) {
+  _auditioneer_display_bits();
+  if($form_id == "auditioneer_audition_node_form"){
+    drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
+    drupal_add_js(drupal_get_path('module', 'auditioneer') . '/auditioneer.js');
 
-    array_unshift($form['#validate'], 'actorscenter_lottery_form_validate');
+    array_unshift($form['#validate'], 'auditioneer_form_validate');
     $form['wrapper'] = array(
-      '#prefix' => '<div id="lottery_form_wrapper">',
+      '#prefix' => '<div id="audition_form_wrapper">',
       '#suffix' => '</div>'
     );
-    $form['field_lottery_time_blocks']['wrapper'] = array(
-      '#prefix' => '<div id="lottery_time_block">',
+    $form['field_auditioneer_time_blocks']['wrapper'] = array(
+      '#prefix' => '<div id="audition_time_block">',
       '#suffix' => '</div>',
     );
     $count = 0;
-    while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+    while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
 
-//      $form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#ajax'] = array(
+//      $form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#ajax'] = array(
 //	'event' => 'change',
-//        'callback' => '_actorscenter_lottery_timeblock_ajax',
-//        'wrapper' => 'lottery_block_timerange_'.$count
+//        'callback' => '_auditioneer_timeblock_ajax',
+//        'wrapper' => 'audition_block_timerange_'.$count
 //      );
 
       $count++;
@@ -89,21 +89,21 @@ function actorscenter_lottery_form_alter(&$form, $form_state, $form_id) {
 }
 
 
-function _actorscenter_lottery_timeblock_ajax(&$form, $form_state){
+function _auditioneer_timeblock_ajax(&$form, $form_state){
  
   $commands = array();
   $count = 0;
-  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+  while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
   }
 
 
-  return($form['field_lottery_time_blocks']['wrapper']);
+  return($form['field_auditioneer_time_blocks']['wrapper']);
 }
 
 /**
  */
 /*
-function actorscenter_lottery_form_submit($form, &$form_state){
+function auditioneer_form_submit($form, &$form_state){
 }
 */
 
@@ -116,18 +116,18 @@ function actorscenter_lottery_form_submit($form, &$form_state){
  *   An array that stores information about the form's current state 
  *   during processing.
  */
-function actorscenter_lottery_form_validate($form, &$form_state){
+function auditioneer_form_validate($form, &$form_state){
   $count = 0;
 
-  while(array_key_exists($count, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
-    $css_id = "#lottery_block_timerange_$count";
-    if(!isset($form['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['#value'])){
+  while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
+    $css_id = "#audition_block_timerange_$count";
+    if(!isset($form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#value'])){
       break;
     }
-    $form_elt = "field_lottery_time_blocks][".LANGUAGE_NONE."][$count][field_time_range][und";
+    $form_elt = "field_auditioneer_time_blocks][".LANGUAGE_NONE."][$count][field_auditioneer_timerange][und";
 
-    $start = strtotime($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['value']);
-    $end = strtotime($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$count]['field_time_range'][LANGUAGE_NONE][0]['value2']);
+    $start = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']);
+    $end = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']);
 
     if(($end - $start)/3600 > 12){
       form_set_error($form_elt, "Time blocks cannot span more than 12 hours");
@@ -135,14 +135,14 @@ function actorscenter_lottery_form_validate($form, &$form_state){
       form_set_error($form_elt, "Time blocks must be 15 minutes or longer");
     }
     $subcount = 0;
-    while(array_key_exists($subcount, $form['field_lottery_time_blocks'][LANGUAGE_NONE])){
+    while(array_key_exists($subcount, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
       if($count == $subcount){
 	$subcount++;
 	continue;
       }
-      $substart = strtotime($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$subcount]['field_time_range'][LANGUAGE_NONE][0]['value']);
-      $subend = strtotime($form_state['values']['field_lottery_time_blocks'][LANGUAGE_NONE][$subcount]['field_time_range'][LANGUAGE_NONE][0]['value2']);
-      $form_subelt = "field_lottery_time_blocks][".LANGUAGE_NONE."][$subcount][field_time_range][und";
+      $substart = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$subcount]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']);
+      $subend = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$subcount]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']);
+      $form_subelt = "field_auditioneer_time_blocks][".LANGUAGE_NONE."][$subcount][field_auditioneer_timerange][und";
       if (($substart >= $start && $substart <= $end) ||
 	  ($subend >= $start && $subend <= $end)){
 	form_set_error($form_subelt, "Audition time block ".date('Y-m-d H:i:s', $substart)." - ".date('Y-m-d H:i:s', $subend)." overlaps with another block");

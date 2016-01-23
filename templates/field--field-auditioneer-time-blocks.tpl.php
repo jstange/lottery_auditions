@@ -65,8 +65,8 @@ foreach ($items as $delta => $item):
     continue;
   }
 $realitem = array_pop($item['entity']['field_collection_item']);
-$cur_start = strtotime($realitem['field_time_range']['#items'][0]['value']);
-$cur_end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
+$cur_start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
+$cur_end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
 if ($start == null || $cur_start < $start){
   $start = $cur_start;
 }

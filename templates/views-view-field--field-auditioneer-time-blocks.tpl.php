@@ -26,8 +26,8 @@
 $start = $end = null;
 foreach ($row->field_field_lottery_time_blocks as $delta => $item){
   $realitem = array_pop($item['rendered']['entity']['field_collection_item']);
-  $cur_start = strtotime($realitem['field_time_range']['#items'][0]['value']);
-  $cur_end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
+  $cur_start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
+  $cur_end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
   if ($start == null || $cur_start < $start){
     $start = $cur_start;
   }

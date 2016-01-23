@@ -1,6 +1,6 @@
 <?php
 
-function _actorscenter_lottery_assign_slot(&$auditioners, $timeblock, $slot_types){
+function _auditioneer_assign_slot(&$auditioners, $timeblock, $slot_types){
   // XXX favor people who haven't had a slot in the longest time
   $assignee_key = $assignee = null;
   foreach ($auditioners as $key => $req){
@@ -19,29 +19,29 @@ function _actorscenter_lottery_assign_slot(&$auditioners, $timeblock, $slot_type
   return $assignee;
 }
 
-function _actorscenter_lottery_signup_mgmt_empty_slot($slot_index, $form_state){
+function _auditioneer_signup_mgmt_empty_slot($slot_index, $form_state){
   $form['slots']['audition_mgmt_table'][$group_start][$slot_index] = array(
     '#type' => "fieldset",
     '#attributes' => array('class' => array('audition_mgmt_slot_entry')),
   );
 }
 
-function _actorscenter_lottery_sort_signups($a, $b){
+function _auditioneer_sort_signups($a, $b){
   return ($a['name'] < $b['name']) ? -1 : 1;
 }
 
-function _actorscenter_lottery_mgmt_form($form, &$form_state, $args){
+function _auditioneer_mgmt_form($form, &$form_state, $args){
   global $user;
   $nid = $args[0];
-  $lottery = $args[1];
+  $audition = $args[1];
 /*
   $trace = debug_backtrace();
   foreach ($trace as $stack => $caller){
   dpm("form callback invoked on $nid by [$stack] ".print_r($caller['function'], true));
   }
 */
-  $interval = $lottery->field_group_interval[LANGUAGE_NONE][0]['value'];
-  $query = db_select('lottery_audition_signups', 's');
+  $interval = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'];
+  $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
   $result = $query
     ->fields('s', array('uid', 'availability', 'placement', 'slot_type'))
@@ -59,22 +59,22 @@ function _actorscenter_lottery_mgmt_form($form, &$form_state, $args){
       $unplaced[] = $req;
     }
   }
-  uasort($disqualified, '_actorscenter_lottery_sort_signups');
-  uasort($unplaced, '_actorscenter_lottery_sort_signups');
+  uasort($disqualified, '_auditioneer_sort_signups');
+  uasort($unplaced, '_auditioneer_sort_signups');
 
-  $form['#prefix'] = "<div id='audition_signup_mgmt_$nid' class='audition_signup_mgmt_wholeform'><h2>".t("$lottery->title signups")."</h2>";
+  $form['#prefix'] = "<div id='audition_signup_mgmt_$nid' class='audition_signup_mgmt_wholeform'><h2>".t("$audition->title signups")."</h2>";
   $form['#suffix'] = "</div>";
-  //  $form['#validate'] = array('lottery_audition_mgmt_validate_callback');
-  $form['lottery_nid'] = array(
+  //  $form['#validate'] = array('auditioneer_audition_mgmt_validate_callback');
+  $form['audition_id'] = array(
     '#type' => 'hidden',
     '#value' => $nid
   );
 
   $button_descs = "<div class='audition_signup_mgmt_button_descs'>
-    <div><img src='/".drupal_get_path('module', 'actorscenter_lottery')."/images/save.png'> = Save the current occupant of this audition slot.</div>
-    <div><img src='/".drupal_get_path('module', 'actorscenter_lottery')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
-    <div><img src='/".drupal_get_path('module', 'actorscenter_lottery')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
-    <div><img src='/".drupal_get_path('module', 'actorscenter_lottery')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/save.png'> = Save the current occupant of this audition slot.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist.</div>
     </div>";
 
 $form['instructions'] = array(
@@ -96,7 +96,7 @@ $form['instructions']['bigbuttons']['save'] = array(
   '#value' => 'Save All Slot Assignments',
   '#prefix' => "<div class='audition_signup_mgmt_submit'>",
   '#suffix' => "Save all <span class='unsaved'>unsaved</span> slots with current assignments. Slots marked as <span class='unsaved'>unsaved</span> (*) are not yet officially assigned.</div>",
-  '#submit' => array('lottery_audition_mgmt_submit_callback')
+  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
 );
 $form['instructions']['bigbuttons']['unassign'] = array(
   '#type' => 'submit',
@@ -106,7 +106,7 @@ $form['instructions']['bigbuttons']['unassign'] = array(
   '#value' => 'Unsave All Saved Slots',
   '#prefix' => "<div class='audition_signup_mgmt_submit'>",
   '#suffix' => " Remove all current assignments, including those that have already been <span class='saved'>saved</span>, and replace them with new (<span class='unsaved'>unsaved</span>) ones randomly selected from the <span class='unassigned'>waitlist</span>.</div>",
-  '#submit' => array('lottery_audition_mgmt_submit_callback')
+  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
 );
 
 
@@ -122,7 +122,7 @@ $form['slots']['audition_mgmt_unassigned_list'] = array(
   '#type' => "fieldset"
 );
 
-if(count($disqualified) > 0){
+//if(count($disqualified) > 0){
   $form['slots']['audition_mgmt_unassigned_list']['reject_list'] = array(
     '#prefix' => "<div id='audition_reject_mgmt_form_$nid' class='audition_reject_mgmt_form'>",
     '#suffix' => "</div>",
@@ -163,10 +163,10 @@ if(count($disqualified) > 0){
     $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['unreject'] = array(
       '#type' => 'image_button',
       '#name' => 'unreject'.$dq_count,
-      '#src' => drupal_get_path('module', 'actorscenter_lottery')."/images/promote.png",
+      '#src' => drupal_get_path('module', 'auditioneer')."/images/promote.png",
       '#default_value' => $req['uid'],
       '#ajax' => array(
-        'callback' => 'lottery_audition_mgmt_submit_callback',
+        'callback' => 'auditioneer_audition_mgmt_submit_callback',
         'wrapper' => 'audition_reject_mgmt_form',
         'method' => 'replace',
         'effect' => 'slide'
@@ -177,8 +177,8 @@ if(count($disqualified) > 0){
       )
     );
   }
-}
-if(count($unplaced) > 0){
+//}
+//if(count($unplaced) > 0){
   $form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
     '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
     '#suffix' => "</div>",
@@ -202,7 +202,7 @@ if(count($unplaced) > 0){
       ),
     );
   }
-}
+//}
 
 $form['slots']['audition_mgmt_table'] = array(
   '#prefix' => "<div class='audition_signup_mgmt_form' id='audition_signup_mgmt_form_$nid'>",
@@ -214,25 +214,25 @@ $form['slots']['audition_mgmt_table'] = array(
   '#attributes' => array(
     'class' => array('audition_mgmt_table')
   )
-  //    '#theme' => 'actorscenter_lottery_components',
+  //    '#theme' => 'auditioneer_components',
 );
 
 shuffle($unplaced); // Randomize the starting point for who gets a slot
 
 $interval_s = $interval*60;
 
-$timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
+$timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
 $tblock_count = 0;
 $slot_index = 1;
 while(array_key_exists($tblock_count, $timeblocks)){
   $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
-  $start = strtotime($realitem['field_time_range']['#items'][0]['value']);
-  $end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
+  $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
+  $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
   $group = 0;
-  $block_slots = $realitem['field_lottery_audition_block_slo']['#items'][0]['value'];
+  $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
   $slot_types = array();
-  if(array_key_exists('field_restrict_audition_type', $realitem)){
-    foreach ($realitem['field_restrict_audition_type']['#items'] as $slottype){
+  if(array_key_exists('field_auditioneer_restrict_slot', $realitem)){
+    foreach ($realitem['field_auditioneer_restrict_slot']['#items'] as $slottype){
       $slot_types[] = $slottype['value'];
     }
   }
@@ -287,7 +287,7 @@ while(array_key_exists($tblock_count, $timeblocks)){
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "saved";
         $saved = true;
       } elseif(count($unplaced) > 0){
-        $req = _actorscenter_lottery_assign_slot($unplaced, $realitem['field_time_range']['#items'][0], $slot_types);
+        $req = _auditioneer_assign_slot($unplaced, $realitem['field_auditioneer_timerange']['#items'][0], $slot_types);
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "unsaved";
       }
       $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title_display'] = "before";
@@ -298,7 +298,7 @@ while(array_key_exists($tblock_count, $timeblocks)){
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail']['#value'] = $req['mail'];
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username']['#value'] = $req['name'];
         $slot_ajax = array(
-          'callback' => 'lottery_audition_mgmt_submit_callback',
+          'callback' => 'auditioneer_audition_mgmt_submit_callback',
           'wrapper' => 'audition_mgmt_slot_entry_'.$nid."_".$slot_index,
           'method' => 'replace',
           'effect' => 'slide'
@@ -308,7 +308,7 @@ while(array_key_exists($tblock_count, $timeblocks)){
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['reject'] = array(
           '#type' => 'image_button',
           '#name' => 'reject'.$slot_index,
-          '#src' => drupal_get_path('module', 'actorscenter_lottery')."/images/x.png",
+          '#src' => drupal_get_path('module', 'auditioneer')."/images/x.png",
           '#default_value' => $req['uid'],
           '#ajax' => $slot_ajax,
           '#attributes' => array(
@@ -319,7 +319,7 @@ while(array_key_exists($tblock_count, $timeblocks)){
           $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['save'] = array(
             '#type' => 'image_button',
             '#name' => 'save'.$slot_index,
-            '#src' => drupal_get_path('module', 'actorscenter_lottery')."/images/save.png",
+            '#src' => drupal_get_path('module', 'auditioneer')."/images/save.png",
             '#default_value' => $req['uid'],
             '#ajax' => $slot_ajax,
             '#attributes' => array(
@@ -331,7 +331,7 @@ while(array_key_exists($tblock_count, $timeblocks)){
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['reload'] = array(
           '#type' => 'image_button',
           '#name' => 'reload'.$slot_index,
-          '#src' => drupal_get_path('module', 'actorscenter_lottery')."/images/reload.png",
+          '#src' => drupal_get_path('module', 'auditioneer')."/images/reload.png",
           '#default_value' => $slot_index,
           '#ajax' => $slot_ajax,
           '#attributes' => array(
@@ -372,7 +372,7 @@ return($form);
 }
 
 
-function theme_actorscenter_lottery_components($vars){
+function theme_auditioneer_components($vars){
   $element = $vars['element'];
   drupal_add_tabledrag($element['#id']."-table", 'order', 'sibling', 'item-row-weight');
 
@@ -406,42 +406,42 @@ function theme_actorscenter_lottery_components($vars){
   ));
 }
 
-function actorscenter_lottery_manage($nid) {
-  _audition_display_bits();
-  $lottery = node_load($nid);
+function auditioneer_manage($nid) {
+  _auditioneer_display_bits();
+  $audition = node_load($nid);
   $output = array();
 
   // Skip auditions that have ended, obviously
-  list($start, $end) = _lottery_audition_get_times($lottery);
+  list($start, $end) = _auditioneer_get_times($audition);
   if($end < time()){
-    $output['#markup'] = "<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($lottery, "full"));
+    $output['#markup'] = "<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
     return $output;
   }
 
   // If we have an audition that's not past the signup deadline yet, make a
   // note of it but don't provide the full form.
-  $deadline = drupal_render(field_view_field('node', $lottery, 'field_lottery_audition_signup_de'));
-  $deadline_str = field_view_field('node', $lottery, 'field_lottery_audition_signup_de');
+  $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline'));
+  $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline');
   $deadline_time = strtotime($deadline_str['#items'][0]['value']);
   if(time() < $deadline_time){
-    $output['#markup'] = "<h1>SIGNUPS HAVE NOT YET CLOSED</h1>".drupal_render(node_view($lottery, "full"));
+    $output['#markup'] = "<h1>SIGNUPS HAVE NOT YET CLOSED</h1>".drupal_render(node_view($audition, "full"));
     return $output;
   }
 
-  return(drupal_get_form('audition_mgmt_'.$nid, $nid, $lottery));
+  return(drupal_get_form('audition_mgmt_'.$nid, $nid, $audition));
 }
 
-function _lottery_audition_list_groups($lottery){
-  $interval_s = $lottery->field_group_interval[LANGUAGE_NONE][0]['value']*60;
-  $timeblocks = field_view_field('node', $lottery, 'field_lottery_time_blocks');
+function _auditioneer_list_groups($audition){
+  $interval_s = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value']*60;
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
   $tblock_count = 0;
   $groups = array();
   while(array_key_exists($tblock_count, $timeblocks)){
     $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
-    $start = strtotime($realitem['field_time_range']['#items'][0]['value']);
-    $end = strtotime($realitem['field_time_range']['#items'][0]['value2']);
+    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
+    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
     $group = 0;
-    $block_slots = $realitem['field_lottery_audition_block_slo']['#items'][0]['value'];
+    $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
     $slots_per_group = ceil($block_slots/(($end - $start)/$interval_s));
     while($start + $group < $end){
       $group_start = $start+$group;
@@ -460,12 +460,12 @@ function _lottery_audition_list_groups($lottery){
   return $groups;
 }
 
-function lottery_audition_mgmt_validate_callback($form, &$form_state){
-  $lottery = node_load($form_state['values']['lottery_nid']);
-  $groups = _lottery_audition_list_groups($lottery);
+function auditioneer_audition_mgmt_validate_callback($form, &$form_state){
+  $audition = node_load($form_state['values']['audition_id']);
+  $groups = _auditioneer_list_groups($audition);
   return $form;
 }
-function _lottery_audition_new_form($nid, $form_state){
+function _auditioneer_new_form($nid, $form_state){
   $new_state = array();
   $new_state['build_info'] = $form_state['build_info'];
   $new_state['rebuild'] = TRUE;
@@ -473,10 +473,10 @@ function _lottery_audition_new_form($nid, $form_state){
   $new_state += form_state_defaults();
   return drupal_rebuild_form('audition_mgmt_'.$nid, $new_state);
 }
-function lottery_audition_mgmt_submit_callback($form, &$form_state){
-  $nid = $form_state['values']['lottery_nid'];
-  $lottery = node_load($form_state['values']['lottery_nid']);
-  $groups = _lottery_audition_list_groups($lottery);
+function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
+  $nid = $form_state['values']['audition_id'];
+  $audition = node_load($form_state['values']['audition_id']);
+  $groups = _auditioneer_list_groups($audition);
   switch ($form_state['triggering_element']['#name']) {
   case "save-$nid":
     $slot_index = 1;
@@ -485,16 +485,16 @@ function lottery_audition_mgmt_submit_callback($form, &$form_state){
       list($start, $end, $slots) = $group;
       for($i=0; $i < $slots; $i++){
         if(!empty($form_state['values'][$start][$slot_index]['uid'])){
-          $result = db_update('lottery_audition_signups')
+          $result = db_update('auditioneer_signups')
             ->fields(array('placement' => $slot_index))
-            ->condition('nid', $form_state['values']['lottery_nid'])
+            ->condition('nid', $form_state['values']['audition_id'])
             ->condition('uid', $form_state['values'][$start][$slot_index]['uid'])
             ->execute();
           $saved++;
         } else {
-          db_update('lottery_audition_signups')
+          db_update('auditioneer_signups')
             ->fields(array('placement' => null))
-            ->condition('nid', $form_state['values']['lottery_nid'])
+            ->condition('nid', $form_state['values']['audition_id'])
             ->condition('placement', $slot_index)
             ->execute();
         }
@@ -509,10 +509,10 @@ function lottery_audition_mgmt_submit_callback($form, &$form_state){
     drupal_set_message("Reassigned all unsaved and empty slots with random selections.");
     break;
   case "unassign-$nid":
-    drupal_set_message("Removed all assignments from $lottery->title", "warning");
-    db_update('lottery_audition_signups')
+    drupal_set_message("Removed all assignments from $audition->title", "warning");
+    db_update('auditioneer_signups')
       ->fields(array('placement' => null))
-      ->condition('nid', $form_state['values']['lottery_nid'])
+      ->condition('nid', $form_state['values']['audition_id'])
       ->condition('placement', 1, '>=')
       ->execute();
     break;
@@ -520,52 +520,53 @@ function lottery_audition_mgmt_submit_callback($form, &$form_state){
     // These are all AJAX responses.
     $commands = array();
     if(preg_match("/^reject\d+/", $form_state['triggering_element']['#name'])){
-      db_update('lottery_audition_signups')
+      db_update('auditioneer_signups')
         ->fields(array('placement' => -1))
-        ->condition('nid', $form_state['values']['lottery_nid'])
+        ->condition('nid', $form_state['values']['audition_id'])
         ->condition('uid', $form_state['triggering_element']['#default_value'])
         ->execute();
       $parents = $form_state['triggering_element']['#array_parents'];
       $group = $parents[count($parents)-3];
       $slot_index = $parents[count($parents)-2];
-      drupal_set_message("Removed <strong>".$form_state['values'][$group][$slot_index]['username']."</strong> from eligibility for <strong>".$lottery->title."</strong>", "warning");
+      drupal_set_message("Removed <strong>".$form_state['values'][$group][$slot_index]['username']."</strong> from eligibility for <strong>".$audition->title."</strong>", "warning");
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
-      $newform = _lottery_audition_new_form($nid, $form_state);
+      $newform = _auditioneer_new_form($nid, $form_state);
       $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
       $commands[] = ajax_command_replace('#audition_reject_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['reject_list']));
       $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
       return array('#type' => 'ajax', '#commands' => $commands);
 
     } elseif(preg_match("/^unreject\d+/", $form_state['triggering_element']['#name'])){
-      db_update('lottery_audition_signups')
+      db_update('auditioneer_signups')
         ->fields(array('placement' => 0))
-        ->condition('nid', $form_state['values']['lottery_nid'])
+        ->condition('nid', $form_state['values']['audition_id'])
         ->condition('uid', $form_state['triggering_element']['#default_value'])
         ->execute();
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
-      drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> is now eligible for <strong>".$lottery->title."</strong>");
+      drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> is now eligible for <strong>".$audition->title."</strong>");
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
-      $newform = _lottery_audition_new_form($nid, $form_state);
-      $commands[] = ajax_command_replace('#audition_reject_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['reject_list']));
+      $newform = _auditioneer_new_form($nid, $form_state);
+
       $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
+      $commands[] = ajax_command_replace('#audition_reject_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['reject_list']));
       $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
       return array('#type' => 'ajax', '#commands' => $commands);
 
     } elseif(preg_match("/^save\d+/", $form_state['triggering_element']['#name'])){
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
-      db_update('lottery_audition_signups')
+      db_update('auditioneer_signups')
         ->fields(array('placement' => $slot_index))
-        ->condition('nid', $form_state['values']['lottery_nid'])
+        ->condition('nid', $form_state['values']['audition_id'])
         ->condition('uid', $form_state['triggering_element']['#default_value'])
         ->execute();
       drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> saved to slot <strong>".$slot_index."</strong>");
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
-      $newform = _lottery_audition_new_form($nid, $form_state);
+      $newform = _auditioneer_new_form($nid, $form_state);
       $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
       $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
       return array('#type' => 'ajax', '#commands' => $commands);
@@ -573,20 +574,20 @@ function lottery_audition_mgmt_submit_callback($form, &$form_state){
     } elseif(preg_match("/^reload\d+/", $form_state['triggering_element']['#name'])){
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
-      db_update('lottery_audition_signups')
+      db_update('auditioneer_signups')
         ->fields(array('placement' => 0))
-        ->condition('nid', $form_state['values']['lottery_nid'])
+        ->condition('nid', $form_state['values']['audition_id'])
         ->condition('placement', $form_state['triggering_element']['#default_value'])
         ->execute();
       drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> removed from slot <strong>".$slot_index."</strong> and waitlisted.");
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
-      $newform = _lottery_audition_new_form($nid, $form_state);
+      $newform = _auditioneer_new_form($nid, $form_state);
       $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
       $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     break;
   }
-  return(_lottery_audition_new_form($nid, $form_state));
+  return(_auditioneer_new_form($nid, $form_state));
 }
