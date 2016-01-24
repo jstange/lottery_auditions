@@ -73,8 +73,8 @@ function auditioneer_install() {
   variable_set('auditioneer_signup_path', 'audition_signup');
  /* 
   node_types_rebuild();
-  menu_rebuild();
    */
+  menu_rebuild();
 }
 
 /*

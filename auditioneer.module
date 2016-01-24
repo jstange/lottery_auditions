@@ -220,9 +220,9 @@ function auditioneer_menu() {
   );
 
   $lotteries = node_load_multiple(array(), array('type' => "auditioneer_audition"));
-  uasort($lotteries, '_auditioneer_audition_sort_by_date');
+  uasort($lotteries, '_auditioneer_sort_by_date');
   foreach ($lotteries as $nid => $lottery){
-    list($start, $end) = _auditioneer_audition_get_times($lottery);
+    list($start, $end) = _auditioneer_get_times($lottery);
     if($end < time()){
       continue;
     }

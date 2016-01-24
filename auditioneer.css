@@ -24,6 +24,14 @@
   white-space:normal;
 }
 
+.page-node-edit .field-name-field-auditioneer-collect div.form-item,
+.page-node-add .field-name-field-auditioneer-collect div.form-item,
+.page-node-edit .field-name-field-auditioneer-restrict-slot div.form-item,
+.page-node-add .field-name-field-auditioneer-restrict-slot div.form-item {
+  display:inline-block;
+  padding-right:1em;
+}
+
 /*
  * Hide the unnecessary second calendar popup for audition block time ranges,
  * which can never span more than one day.
