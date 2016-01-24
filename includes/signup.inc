@@ -103,6 +103,35 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       $submit_text = t('Update My Availability');
     }
   }
+  $global_contact_fields = Array();
+  $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect');
+  foreach ($contact_items['#items'] as $delta => $value){
+    $global_contact_fields[] = $value['value'];
+  }
+
+  $form['contact_email'] = array(
+    '#type' => 'textfield',
+    '#size' => 35,
+    '#title' => t('Email'),
+    '#required' => in_array("Email", $global_contact_fields)
+  );
+  $form['contact_name'] = array(
+    '#type' => 'textfield',
+    '#size' => 35,
+    '#title' => t('Name'),
+    '#required' => in_array("Name", $global_contact_fields)
+  );
+  $form['contact_phone'] = array(
+    '#type' => 'textfield',
+    '#size' => 16,
+    '#title' => t('Phone'),
+    '#required' => in_array("Phone", $global_contact_fields)
+  );
+  $form['contact_resume'] = array(
+    '#type' => 'file',
+    '#title' => t('Photo/Resume'),
+    '#required' => in_array("Photo/Resume", $global_contact_fields)
+  );
 
   $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
   $address = "<div class='auditioneer_audition_address'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_location'))."</div>";

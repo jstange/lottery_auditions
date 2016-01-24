@@ -75,6 +75,16 @@ function auditioneer_install() {
   node_types_rebuild();
    */
   menu_rebuild();
+
+  $role = user_role_load_by_name("administrator");
+  if($role){
+    user_role_grant_permissions($role->rid, array('administer auditions'));
+  }
+
+  $role = user_role_load_by_name("authenticated user");
+  if($role){
+    user_role_grant_permissions($role->rid, array('view and sign up for auditions'));
+  }
 }
 
 /*
@@ -107,6 +117,12 @@ function auditioneer_schema() {
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE
+      ),
+      'contact_data' => array(
+        'description' => "If audition signups collect contact data (name, email, phone number) we serialize it and store it here.",
+        'type' => 'text',
+        'not null' => TRUE,
+        'serialize' => TRUE,
       ),
       'placement' => array(
         'description' => "0 for no slot, 1 for accepted, 2 for wait list, 3 for declined",
