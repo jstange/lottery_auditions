@@ -12,7 +12,7 @@ function _auditioneer_get_times($audition){
     array_key_exists($audition->nid, $_auditioneer_cached_times)){
     return $_auditioneer_cached_times[$audition->nid];
   }
-  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'full');
   $count = $start = $end = 0;
   while(array_key_exists($count, $timeblocks)){
     $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
@@ -26,7 +26,9 @@ function _auditioneer_get_times($audition){
     }
     $count++;
   }
-  $_auditioneer_cached_times[$audition->nid] = array($start, $end);
+  if($start > 0 && $end > 0){
+    $_auditioneer_cached_times[$audition->nid] = array($start, $end);
+  }
   return array($start, $end);
 }
 
@@ -89,26 +91,33 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $audition = $args[1];
   $disabled = false;
   $ext_requests = db_select('auditioneer_signups', 's')
-    ->fields('s', array('availability', 'placement', 'slot_type'))
+    ->fields('s', array('availability', 'contact_data', 'placement', 'slot_type'))
     ->condition('nid', $nid)
     ->condition('uid', $user->uid)
     ->execute()
     ->fetchAssoc();
-  $availability = $slot_type = null;
+  $availability = $contact_data = $slot_type = null;
   $submit_text = t('Sign Up');
-  if(count($ext_requests) > 0 && is_array($ext_requests) && array_key_exists('availability', $ext_requests)){
-    $availability = unserialize($ext_requests['availability']);
+  if(count($ext_requests) > 0 && is_array($ext_requests)){
     $slot_type = $ext_requests['slot_type'];
-    if(count($availability)  > 0){
-      $submit_text = t('Update My Availability');
+    if(array_key_exists('availability', $ext_requests)){
+      $availability = unserialize($ext_requests['availability']);
+      if(count($availability)  > 0){
+        $submit_text = t('Update');
+      }
+    }
+    if(array_key_exists('contact_data', $ext_requests)){
+      $contact_data = unserialize($ext_requests['contact_data']);
     }
   }
   $req_contact_fields = Array();
   $avail_contact_fields = Array();
   $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect');
-  foreach ($contact_items['#items'] as $delta => $value){
-    $req_contact_fields[] = $value['value'];
-    $avail_contact_fields[] = $value['value'];
+  if(is_array($contact_items) && array_key_exists('#items', $contact_items) && is_array($contact_items['#items'])){
+    foreach ($contact_items['#items'] as $delta => $value){
+      $req_contact_fields[] = $value['value'];
+      $avail_contact_fields[] = $value['value'];
+    }
   }
 
   $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'full');
@@ -317,39 +326,54 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     if(!in_array("Name", $req_contact_fields)){
       $req_class = "hidden";
     }
-    $form['audition_signup_fieldset']['contact_panel']['contact_name'] = array(
+    $form['audition_signup_fieldset']['contact_panel']['name'] = array(
       '#type' => 'textfield',
       '#size' => 25,
+      '#name' => 'name',
       '#title' => t('Name').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 90,
       '#attributes' => array('class' => array('auditioneer_signup_contact_name'))
     );
+    if(!empty($contact_data['name'])){
+      $form['audition_signup_fieldset']['contact_panel']['name']['#default_value'] = $contact_data['name'];
+      $form['audition_signup_fieldset']['contact_panel']['name']['#value'] = $contact_data['name'];
+    }
   }
   if(in_array("Email", $avail_contact_fields)){
     $req_class = "";
     if(!in_array("Email", $req_contact_fields)){
       $req_class = "hidden";
     }
-    $form['audition_signup_fieldset']['contact_panel']['contact_email'] = array(
+    $form['audition_signup_fieldset']['contact_panel']['email'] = array(
       '#type' => 'textfield',
       '#size' => 25,
+      '#name' => 'email',
       '#title' => t('Email').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 91,
       '#attributes' => array('class' => array('auditioneer_signup_contact_email'))
     );
+    if(!empty($contact_data['email'])){
+      $form['audition_signup_fieldset']['contact_panel']['email']['#default_value'] = $contact_data['email'];
+      $form['audition_signup_fieldset']['contact_panel']['email']['#value'] = $contact_data['email'];
+    }
   }
   if(in_array("Phone", $avail_contact_fields)){
     $req_class = "";
     if(!in_array("Phone", $req_contact_fields)){
       $req_class = "hidden";
     }
-    $form['audition_signup_fieldset']['contact_panel']['contact_phone'] = array(
+    $form['audition_signup_fieldset']['contact_panel']['phone'] = array(
       '#type' => 'textfield',
+      '#name' => 'phone',
       '#size' => 16,
       '#title' => t('Phone').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 92,
       '#attributes' => array('class' => array('auditioneer_signup_contact_phone'))
     );
+    if(!empty($contact_data['phone'])){
+      $form['audition_signup_fieldset']['contact_panel']['phone']['#default_value'] = $contact_data['phone'];
+      $form['audition_signup_fieldset']['contact_panel']['phone']['#value'] = $contact_data['phone'];
+    }
   }
   if(in_array("Photo/Resume", $avail_contact_fields)){
     $req_class = "";
@@ -358,10 +382,15 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     }
     $form['audition_signup_fieldset']['contact_panel']['contact_resume'] = array(
       '#type' => 'file',
+      '#name' => 'files[resume]',
       '#title' => t('Photo/Resume').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 93,
+      '#upload_validators' => array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")),
       '#attributes' => array('class' => array('auditioneer_signup_contact_resume'))
     );
+    if(!empty($contact_data['resume'])){
+      $form['audition_signup_fieldset']['contact_panel']['contact_resume']['#title'] = t('Photo/Resume already uploaded as '.preg_replace("/.*?\//", "", $contact_data['resume']));
+    }
   }
 
   return($form);
@@ -385,6 +414,7 @@ function auditioneer_forms($form_id, $args) {
 
 
 function auditioneer_audition_signup_validate_callback($form, &$form_state){
+  global $user;
   $count = 0;
   $timeblocks = array();
   $nid = $form_state['input']['audition_id'];
@@ -395,6 +425,7 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
   foreach ($contact_items['#items'] as $delta => $value){
     $req_contact_fields[] = $value['value'];
   }
+
 
   $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
   while (array_key_exists($count, $timeblocks)){
@@ -411,19 +442,40 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
     form_set_error("", "You must sign up for at least one block of time");
   }
 
-  if(in_array("Email", $req_contact_fields)){
-    form_set_error("contact_email", "Email field is required for one or more selected time blocks.");
+  if(in_array("Email", $req_contact_fields) && empty($form_state['input']['email'])){
+    form_set_error("email", "Email field is required for one or more selected time blocks.");
   }
-  if(in_array("Name", $req_contact_fields)){
-    form_set_error("contact_name", "Name field is required for one or more selected time blocks.");
-  }
-  if(in_array("Phone", $req_contact_fields)){
-    form_set_error("contact_phone", "Phone field is required for one or more selected time blocks.");
-  }
-  if(in_array("Photo/Resume", $req_contact_fields)){
-    form_set_error("contact_resume", "Photo/Resume field is required for one or more selected time blocks.");
+  if(!empty($form_state['input']['email']) && !valid_email_address($form_state['input']['email'])){
+    form_set_error("email", "Email field value '".$form_state['input']['email']."' does not appear to be a valid email address.");
   }
 
+  if(in_array("Name", $req_contact_fields) && empty($form_state['input']['name'])){
+    form_set_error("name", "Name field is required for one or more selected time blocks.");
+  }
+  if(in_array("Phone", $req_contact_fields) && empty($form_state['input']['phone'])){
+    form_set_error("phone", "Phone field is required for one or more selected time blocks.");
+  }
+
+  if(in_array("Photo/Resume", $req_contact_fields)){
+    $file = file_save_upload('resume', array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")));
+    if(empty($file)){
+      $contact_data = array();
+      $ext_requests = db_select('auditioneer_signups', 's')
+        ->fields('s', array('contact_data'))
+        ->condition('nid', $nid)
+        ->condition('uid', $user->uid)
+        ->execute()
+        ->fetchAssoc();
+      if(count($ext_requests) > 0 && is_array($ext_requests)){
+        if(array_key_exists('contact_data', $ext_requests)){
+          $contact_data = unserialize($ext_requests['contact_data']);
+        }
+      }
+      if(empty($contact_data['resume'])){
+        form_set_error("resume", "Photo/Resume field is required for one or more selected time blocks.");
+      }
+    }
+  }
   return $form;
 }
 
@@ -447,6 +499,31 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   if(array_key_exists("${nid}_auditioneer_slot_type", $form_state['input'])){
     $slot_type = $form_state['input']["${nid}_auditioneer_slot_type"];
   }
+  $contact = array();
+  if(!empty($form_state['input']['email'])){
+    $contact['email'] = $form_state['input']['email'];
+  }
+  if(!empty($form_state['input']['name'])){
+    $contact['name'] = $form_state['input']['name'];
+  }
+  if(!empty($form_state['input']['phone'])){
+    $contact['phone'] = $form_state['input']['phone'];
+  }
+
+  $validators = array();
+  drupal_mkdir('public://auditioneer_'.$nid);
+  $file = file_save_upload('resume', $validators, 'public://auditioneer_'.$nid.'/');
+  if(!empty($file)){
+    $contact['resume'] = $file->uri;
+  }
+
+  $ext_request = db_select('auditioneer_signups', 's')
+    ->fields('s', array('contact_data'))
+    ->condition('nid', $nid)
+    ->condition('uid', $user->uid)
+    ->execute()
+    ->fetchAssoc();
+
   db_delete('auditioneer_signups')
     ->condition('nid', $form_state['input']['audition_id'])
     ->condition('uid', $user->uid)
@@ -456,9 +533,11 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
       'nid' => $form_state['input']['audition_id'],
       'uid' => $user->uid,
       'slot_type' => $slot_type,
-      'availability' => serialize($requested_blocks)
+      'availability' => serialize($requested_blocks),
+      'contact_data' => serialize(array_merge(unserialize($ext_request['contact_data']), $contact))
     ))
     ->execute();
+
   return $form;
 }
 

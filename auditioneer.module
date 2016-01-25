@@ -55,7 +55,7 @@ function auditioneer_admin() {
     '#type' => 'textfield',
     '#title' => t('Signup page path'),
     '#default_value' => variable_get('auditioneer_signup_path'),
-    '#description' => t("The path to the signup page where all pending lotteries will be visible to users (currently <a href='/".variable_get('auditioneer_signup_path')."'>/".variable_get('auditioneer_signup_path')."</a>). <strong>You may need to clear the site cache for changes to this variable to take effect.</strong>"),
+    '#description' => t("The path to the signup page where all pending auditions will be visible to users (currently <a href='/".variable_get('auditioneer_signup_path')."'>/".variable_get('auditioneer_signup_path')."</a>). <strong>You may need to clear the site cache for changes to this variable to take effect.</strong>"),
     '#required' => TRUE
   );
 
@@ -115,7 +115,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_open_banner'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner text for open lotteries.'),
+    '#title' => t('Banner text for open auditions.'),
     '#default_value' => variable_get('auditioneer_signup_open_banner'),
     '#size' => 20,
     '#maxlength' => 15,
@@ -124,7 +124,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_open_color'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner background color for open lotteries.'),
+    '#title' => t('Banner background color for open auditions.'),
     '#default_value' => variable_get('auditioneer_signup_open_color'),
     '#size' => 15,
     '#maxlength' => 20,
@@ -134,7 +134,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_signedup_banner'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner text for lotteries the user has entered.'),
+    '#title' => t('Banner text for auditions the user has entered.'),
     '#default_value' => variable_get('auditioneer_signup_signedup_banner'),
     '#size' => 20,
     '#maxlength' => 15,
@@ -143,7 +143,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_signedup_color'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner background color for lotteries the user has entered.'),
+    '#title' => t('Banner background color for auditions the user has entered.'),
     '#default_value' => variable_get('auditioneer_signup_signedup_color'),
     '#size' => 15,
     '#maxlength' => 20,
@@ -153,7 +153,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_closed_nosignup_banner'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner text for closed lotteries.'),
+    '#title' => t('Banner text for closed auditions.'),
     '#default_value' => variable_get('auditioneer_signup_closed_nosignup_banner'),
     '#size' => 20,
     '#maxlength' => 15,
@@ -162,7 +162,7 @@ function auditioneer_admin() {
   );
   $form['auditioneer_corner_banner']['auditioneer_signup_closed_nosignup_color'] = array(
     '#type' => 'textfield',
-    '#title' => t('Banner background color for closed lotteries.'),
+    '#title' => t('Banner background color for closed auditions.'),
     '#default_value' => variable_get('auditioneer_signup_closed_nosignup_color'),
     '#size' => 15,
     '#maxlength' => 20,
@@ -233,17 +233,17 @@ function auditioneer_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer auditions')
   );
+  $auditions = node_load_multiple(array(), array('type' => "auditioneer_audition"));
 
-  $lotteries = node_load_multiple(array(), array('type' => "auditioneer_audition"));
-  uasort($lotteries, '_auditioneer_sort_by_date');
-  foreach ($lotteries as $nid => $lottery){
-    list($start, $end) = _auditioneer_get_times($lottery);
+  uasort($auditions, '_auditioneer_sort_by_date');
+  foreach ($auditions as $nid => $audition){
+    list($start, $end) = _auditioneer_get_times($audition);
     if($end < time()){
       continue;
     }
     $items['admin/config/people/auditions/'.$nid] = array(
-      'title' => $lottery->title,
-      'description' => drupal_render(field_view_field('node', $lottery, 'field_lottery_time_blocks')),
+      'title' => $audition->title,
+      'description' => drupal_render(field_view_field('node', $audition, 'field_auditioneer_time_blocks')),
       'page callback' => 'auditioneer_manage',
       'page arguments' => array(4),
       'access callback' => 'user_access',

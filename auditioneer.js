@@ -62,6 +62,8 @@ jQuery(document).ready(function ($) {
             $(this).addClass("auditioneer_audition_timeblock_paint_disabled");
             $(this).removeClass("auditioneer_audition_timeblock_paint_checked");
             $(this).addClass("auditioneer_audition_timeblock_paint_unchecked");
+            $(this).css("color", Drupal.settings.auditioneer.timeblock_unchecked_text);
+            $(this).css("background-color", Drupal.settings.auditioneer.timeblock_unchecked);
           } else {
             $(this).removeClass("auditioneer_audition_timeblock_paint_disabled");
           }
@@ -70,6 +72,9 @@ jQuery(document).ready(function ($) {
           if(!$(this).hasClass(classname)){
             $(this).prop("checked", false);
             $(this).attr("disabled", "disabled");
+            $($(this).attr("req_contact_fields")).each( function( index, element ){
+              $(this).find("label span.form-required").addClass("hidden");
+            });
           } else {
             $(this).removeAttr("disabled");
           }

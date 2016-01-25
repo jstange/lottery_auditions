@@ -44,13 +44,14 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
   $result = $query
-    ->fields('s', array('uid', 'availability', 'placement', 'slot_type'))
+    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
     ->fields('u', array('name', 'mail'))
     ->condition('nid', $nid)
     ->execute();
   $placements = $unplaced = $disqualified = array();
   while($req = $result->fetchAssoc()){
     $req['availability'] = unserialize($req['availability']);
+    $req['contact_data'] = unserialize($req['contact_data']);
     if($req['placement'] != null && $req['placement'] > 0){
       $placements[$req['placement']] = $req;
     } elseif($req['placement'] != null && $req['placement'] < 0){
@@ -293,7 +294,11 @@ while(array_key_exists($tblock_count, $timeblocks)){
       $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title_display'] = "before";
       if($req != null && $nid && $req['uid']){
         // XXX link to uploaded P/R if they're not a real user
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a></div>";
+        $resume_link = "";
+        if(!empty($req['contact_data']['resume'])){
+          $resume_link = "<a href='".file_create_url($req['contact_data']['resume'])."'><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png' class='audition_signup_mgmt_button'></a>";
+        }
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a> $resume_link</div>";
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid']['#value'] = $req['uid'];
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail']['#value'] = $req['mail'];
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username']['#value'] = $req['name'];

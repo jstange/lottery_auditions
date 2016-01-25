@@ -326,6 +326,7 @@ div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry div.fieldset-wra
   float:right;
   position:relative;
 }
+img.audition_signup_mgmt_button,
 div.audition_reject_mgmt_form input.audition_signup_mgmt_button,
 div.audition_signup_mgmt_form input.audition_signup_mgmt_button {
   display:inline-block;
@@ -335,6 +336,9 @@ div.audition_signup_mgmt_form input.audition_signup_mgmt_button {
   padding:0px;
   max-height:1em;
   max-width:1em;
+}
+img.audition_signup_mgmt_button {
+  padding-left:0.5em;
 }
 div.audition_signup_mgmt_form .form-item-weight {
   display:none;
