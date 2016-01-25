@@ -425,6 +425,20 @@ div.audition_signup_mgmt_submit {
   float:left;
 }
 
+fieldset.auditioneer_audition_signup_contact_panel {
+  padding:0px;
+  border:0px;
+  margin-bottom:1em;
+}
+fieldset.auditioneer_audition_signup_contact_panel div.form-item {
+  display:inline-block;
+  margin-top:0px;
+  margin-bottom:0px;
+}
+fieldset.auditioneer_audition_signup_contact_panel input {
+  font-size:small;
+}
+
 div.audition_signup_mgmt_submit input.audition_signup_mgmt_bigbutton {
   display:block;
   margin-bottom:0px;
