@@ -278,6 +278,13 @@ fieldset.audition_mgmt_slot_entry {
   margin:0.1em;
   white-space:nowrap;
   border-radius:0.5em;
+  position:relative;
+}
+fieldset.audition_mgmt_waitlist_entry > legend,
+fieldset.audition_mgmt_reject_entry > legend,
+fieldset.audition_mgmt_slot_entry > legend {
+  position:relative;
+  height:100%;
 }
 fieldset.audition_mgmt_waitlist_entry > div.fieldset-wrapper,
 fieldset.audition_mgmt_reject_entry > div.fieldset-wrapper,
@@ -326,7 +333,6 @@ div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry div.fieldset-wra
   float:right;
   position:relative;
 }
-img.audition_signup_mgmt_button,
 div.audition_reject_mgmt_form input.audition_signup_mgmt_button,
 div.audition_signup_mgmt_form input.audition_signup_mgmt_button {
   display:inline-block;
@@ -337,15 +343,21 @@ div.audition_signup_mgmt_form input.audition_signup_mgmt_button {
   max-height:1em;
   max-width:1em;
 }
-img.audition_signup_mgmt_button {
-  padding-left:0.5em;
-}
 div.audition_signup_mgmt_form .form-item-weight {
   display:none;
 }
-div.audition_signup_mgmt_form fieldset.audition-mgmt-group-block div.form-item {
-  padding:0.1em;
+fieldset.audition_mgmt_slot_entry div.form-item {
+  display:inline-block;
+  padding:0px;
+  padding-right:0.8em;
   margin:0px;
+  float:right;
+  max-height:1em;
+  position:relative;
+}
+fieldset.audition_mgmt_slot_entry div.form-item img.audition_signup_mgmt_button {
+  height:1.1em;
+  position:relative;
 }
 div.audition_waitlist .audition_mgmt_table_auditioner_label,
 div.audition_reject_mgmt_form .audition_mgmt_table_auditioner_label,
@@ -381,7 +393,6 @@ div.audition_reject_mgmt_form > fieldset > legend {
   clear:both;
   font-size:large;
   position:relative;
-  padding-bottom:0.5em;
 }
 div.audition_waitlist > fieldset > div.fieldset-wrapper,
 div.audition_reject_mgmt_form > fieldset > div.fieldset-wrapper {

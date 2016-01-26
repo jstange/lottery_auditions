@@ -39,7 +39,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   foreach ($trace as $stack => $caller){
   dpm("form callback invoked on $nid by [$stack] ".print_r($caller['function'], true));
   }
-*/
+ */
   $interval = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'];
   $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
@@ -76,6 +76,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png'> = View the uploaded resume of this auditioner.</div>
     </div>";
 
 $form['instructions'] = array(
@@ -124,85 +125,85 @@ $form['slots']['audition_mgmt_unassigned_list'] = array(
 );
 
 //if(count($disqualified) > 0){
-  $form['slots']['audition_mgmt_unassigned_list']['reject_list'] = array(
-    '#prefix' => "<div id='audition_reject_mgmt_form_$nid' class='audition_reject_mgmt_form'>",
-    '#suffix' => "</div>",
-    '#tree' => true,
-    '#type' => "fieldset",
-    '#title' => t("Ineligible (".count($disqualified).")"),
-    '#title_display' => "before"
-  );
-  foreach ($disqualified as $dq_count => $req){
-    $slot_type = "";
-    if(!empty($req['slot_type'])){
-      $slot_type = " (".$req['slot_type'].")";
-    }
-    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count] = array(
-      '#type' => "fieldset",
-      '#title_display' => "before",
-      '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
-      '#attributes' => array(
-        'class' => array('audition_mgmt_reject_entry', 'reject'),
-        'id' => array('audition_mgmt_reject_entry_'.$nid."_".$dq_count)
-      ),
-    );
-    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['uid'] = array(
-      '#type' => 'hidden',
-      '#value' => $req['uid'],
-      '#name' => 'uid'
-    );
-    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['username'] = array(
-      '#type' => 'hidden',
-      '#value' => $req['name'],
-      '#name' => 'username'
-    );
-    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['mail'] = array(
-      '#type' => 'hidden',
-      '#value' => $req['mail'],
-      '#name' => 'mail'
-    );
-    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['unreject'] = array(
-      '#type' => 'image_button',
-      '#name' => 'unreject'.$dq_count,
-      '#src' => drupal_get_path('module', 'auditioneer')."/images/promote.png",
-      '#default_value' => $req['uid'],
-      '#ajax' => array(
-        'callback' => 'auditioneer_audition_mgmt_submit_callback',
-        'wrapper' => 'audition_reject_mgmt_form',
-        'method' => 'replace',
-        'effect' => 'slide'
-      ),
-      '#attributes' => array(
-        'class' => array('audition_signup_mgmt_unreject', 'audition_signup_mgmt_button'),
-        'alt' => "Put this entry back into the pool of eligible auditioners."
-      )
-    );
+$form['slots']['audition_mgmt_unassigned_list']['reject_list'] = array(
+  '#prefix' => "<div id='audition_reject_mgmt_form_$nid' class='audition_reject_mgmt_form'>",
+  '#suffix' => "</div>",
+  '#tree' => true,
+  '#type' => "fieldset",
+  '#title' => t("Ineligible (".count($disqualified).")"),
+  '#title_display' => "before"
+);
+foreach ($disqualified as $dq_count => $req){
+  $slot_type = "";
+  if(!empty($req['slot_type'])){
+    $slot_type = " (".$req['slot_type'].")";
   }
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count] = array(
+    '#type' => "fieldset",
+    '#title_display' => "before",
+    '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
+    '#attributes' => array(
+      'class' => array('audition_mgmt_reject_entry', 'reject'),
+      'id' => array('audition_mgmt_reject_entry_'.$nid."_".$dq_count)
+    ),
+  );
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $req['uid'],
+    '#name' => 'uid'
+  );
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['username'] = array(
+    '#type' => 'hidden',
+    '#value' => $req['name'],
+    '#name' => 'username'
+  );
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['mail'] = array(
+    '#type' => 'hidden',
+    '#value' => $req['mail'],
+    '#name' => 'mail'
+  );
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['unreject'] = array(
+    '#type' => 'image_button',
+    '#name' => 'unreject'.$dq_count,
+    '#src' => drupal_get_path('module', 'auditioneer')."/images/promote.png",
+    '#default_value' => $req['uid'],
+    '#ajax' => array(
+      'callback' => 'auditioneer_audition_mgmt_submit_callback',
+      'wrapper' => 'audition_reject_mgmt_form',
+      'method' => 'replace',
+      'effect' => 'fade'
+    ),
+    '#attributes' => array(
+      'class' => array('audition_signup_mgmt_unreject', 'audition_signup_mgmt_button'),
+      'alt' => "Put this entry back into the pool of eligible auditioners."
+    )
+  );
+}
 //}
 //if(count($unplaced) > 0){
-  $form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
-    '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
-    '#suffix' => "</div>",
-    '#tree' => true,
-    '#type' => "fieldset",
-    '#title' => t("Waitlisted (".count($unplaced).")"),
-    '#title_display' => "before"
-  );
-  foreach ($unplaced as $wl_count => $req){
-    $slot_type = "";
-    if(!empty($req['slot_type'])){
-      $slot_type = " (".$req['slot_type'].")";
-    }
-    $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count] = array(
-      '#type' => "fieldset",
-      '#title_display' => "before",
-      '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
-      '#attributes' => array(
-        'class' => array('audition_mgmt_waitlist_entry', 'waitlist'),
-        'id' => array('audition_mgmt_waitlist_entry_'.$nid."_".$wl_count)
-      ),
-    );
+$form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
+  '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
+  '#suffix' => "</div>",
+  '#tree' => true,
+  '#type' => "fieldset",
+  '#title' => t("Waitlisted (".count($unplaced).")"),
+  '#title_display' => "before"
+);
+foreach ($unplaced as $wl_count => $req){
+  $slot_type = "";
+  if(!empty($req['slot_type'])){
+    $slot_type = " (".$req['slot_type'].")";
   }
+  $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count] = array(
+    '#type' => "fieldset",
+    '#title_display' => "before",
+    '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
+    '#attributes' => array(
+      'class' => array('audition_mgmt_waitlist_entry', 'waitlist'),
+      'id' => array('audition_mgmt_waitlist_entry_'.$nid."_".$wl_count)
+    ),
+  );
+}
 //}
 
 $form['slots']['audition_mgmt_table'] = array(
@@ -293,20 +294,25 @@ while(array_key_exists($tblock_count, $timeblocks)){
       }
       $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title_display'] = "before";
       if($req != null && $nid && $req['uid']){
-        // XXX link to uploaded P/R if they're not a real user
-        $resume_link = "";
-        if(!empty($req['contact_data']['resume'])){
-          $resume_link = "<a href='".file_create_url($req['contact_data']['resume'])."'><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png' class='audition_signup_mgmt_button'></a>";
-        }
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a> $resume_link</div>";
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid']['#value'] = $req['uid'];
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail']['#value'] = $req['mail'];
         $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username']['#value'] = $req['name'];
+        if(!empty($req['contact_data']['resume'])){
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['resume'] = array(
+            '#type' => 'item',
+            '#markup' => "<a href='".file_create_url($req['contact_data']['resume'])."' target='_blank'><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png' class='audition_signup_mgmt_button'></a>",
+            '#weight' => 20,
+            '#attributes' => array(
+              'class' => array('audition_signup_mgmt_button')
+            )
+          );
+        }
         $slot_ajax = array(
           'callback' => 'auditioneer_audition_mgmt_submit_callback',
           'wrapper' => 'audition_mgmt_slot_entry_'.$nid."_".$slot_index,
           'method' => 'replace',
-          'effect' => 'slide'
+          'effect' => 'fade'
         );
         $req['placement'] = $slot_index;
         $placements[$slot_index] = $req;
@@ -482,6 +488,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $nid = $form_state['values']['audition_id'];
   $audition = node_load($form_state['values']['audition_id']);
   $groups = _auditioneer_list_groups($audition);
+  $form_state['rebuild'] = TRUE;
   switch ($form_state['triggering_element']['#name']) {
   case "save-$nid":
     $slot_index = 1;
@@ -537,9 +544,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
       $newform = _auditioneer_new_form($nid, $form_state);
-      $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
-      $commands[] = ajax_command_replace('#audition_reject_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['reject_list']));
-      $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
+      $commands[] = ajax_command_replace('#audition_signup_mgmt_'.$nid, render($newform));
       return array('#type' => 'ajax', '#commands' => $commands);
 
     } elseif(preg_match("/^unreject\d+/", $form_state['triggering_element']['#name'])){
@@ -554,10 +559,8 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
       $newform = _auditioneer_new_form($nid, $form_state);
+      $commands[] = ajax_command_replace('#audition_signup_mgmt_'.$nid, render($newform));
 
-      $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
-      $commands[] = ajax_command_replace('#audition_reject_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['reject_list']));
-      $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
       return array('#type' => 'ajax', '#commands' => $commands);
 
     } elseif(preg_match("/^save\d+/", $form_state['triggering_element']['#name'])){
@@ -572,8 +575,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
       $newform = _auditioneer_new_form($nid, $form_state);
-      $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
-      $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
+      $commands[] = ajax_command_replace('#audition_signup_mgmt_'.$nid, render($newform));
       return array('#type' => 'ajax', '#commands' => $commands);
 
     } elseif(preg_match("/^reload\d+/", $form_state['triggering_element']['#name'])){
@@ -588,8 +590,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $commands[] = ajax_command_remove('div.messages');
       $commands[] = ajax_command_before('div.region-content', theme('status_messages'));
       $newform = _auditioneer_new_form($nid, $form_state);
-      $commands[] = ajax_command_replace('#audition_signup_mgmt_form_'.$nid, render($newform['slots']['audition_mgmt_table']));
-      $commands[] = ajax_command_replace('#audition_waitlist_'.$nid, render($newform['slots']['audition_mgmt_unassigned_list']['waitlist']));
+      $commands[] = ajax_command_replace('#audition_signup_mgmt_'.$nid, render($newform));
       return array('#type' => 'ajax', '#commands' => $commands);
     }
     break;
