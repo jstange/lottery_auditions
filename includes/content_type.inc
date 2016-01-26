@@ -1,5 +1,29 @@
 <?php
 
+/*
+ * Take a FAPI date field and return DateTime object(s) based on it, with
+ * attendant timezone weirdness taken care of.
+ */
+function _auditioneer_get_datetime_from_datefield_array($datefield){
+  $stamp_1 = strtotime($datefield['value']);
+  if(array_key_exists('offset', $datefield)){
+    $stamp_1 += $datefield['offset'];
+  }
+  $date1 = new DateTime();
+  $date1->setTimeStamp($stamp_1);
+
+  $date_2 = null;
+  if(array_key_exists('value2', $datefield)){
+    $stamp_2 = strtotime($datefield['value2']);
+    if(array_key_exists('offset2', $datefield)){
+      $stamp_2 += $datefield['offset2'];
+    }
+    $date2 = new DateTime();
+    $date2->setTimeStamp($stamp_2);
+  }
+  return array($date1, $date2);
+}
+
 /**
  * Make sure the ends of our audition time blocks are on the same days as their
  * respective beginnings (really we're just collecting the time bit).
@@ -10,22 +34,23 @@
  * the first one up against the wall when the revolution comes.
  */
 function _auditioneer_datefield_sync_dates(&$datefield){
-  $date1 = "";
-  if(is_object($datefield['value'])){
-    $date1 = strtotime($datefield['value']);
+  $date1 = new DateTime();
+  if($datefield['value'] instanceof DateTime){
+    $date1 = $datefield['value'];
   } elseif(is_array($datefield['value'])){
-    $date1 = strtotime($datefield['value']['date']);
+    $date1->setTimeStamp(strtotime($datefield['value']['date']));
   } else {
-    $date1 = strtotime($datefield['value']);
+    $date1->setTimeStamp(strtotime($datefield['value']));
   }
 
-  if(is_object($datefield['value2'])){
-    $datefield['value2']->setDate(date('Y', $date1), date('m', $date1), date('d', $date1));
+  if($datefield['value2'] instanceof DateTime){
+    $datefield['value2']->setDate($date1->format('Y'), $date1->format('m'), $date1->format('d'));
   } elseif(is_array($datefield['value2'])){
-    $datefield['value2']['date'] = $datefield['value']['date'];
+    $datefield['value2']['date'] = $date1->format('Y-m-d');
   } else {
-    $date2 = strtotime($datefield['value2']);
-    $datefield['value2'] = date('Y-m-d', $date1)." ".date('H:i:s', $date2);
+    $date2 = new DateTime();
+    $date2->setTimeStamp(strtotime($datefield['value2']));
+    $datefield['value2'] = $date1->format('Y-m-d')." ".$date2->format('H:i:s');
   }
 }
 
@@ -64,7 +89,6 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
   if($form_id == "auditioneer_audition_node_form"){
     drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
     drupal_add_js(drupal_get_path('module', 'auditioneer') . '/auditioneer.js');
-
     array_unshift($form['#validate'], 'auditioneer_form_validate');
     $form['wrapper'] = array(
       '#prefix' => '<div id="audition_form_wrapper">',
@@ -75,13 +99,16 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
       '#suffix' => '</div>',
     );
     $count = 0;
+    unset($form['field_auditioneer_finalized']); // internal-use field, hide from users
+    $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#value'] = "US"; // XXX why doesn't #default_value work?
+    $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#weight'] = 500;
     while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
 
-//      $form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#ajax'] = array(
-//	'event' => 'change',
-//        'callback' => '_auditioneer_timeblock_ajax',
-//        'wrapper' => 'audition_block_timerange_'.$count
-//      );
+      //      $form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#ajax'] = array(
+      //	'event' => 'change',
+      //        'callback' => '_auditioneer_timeblock_ajax',
+      //        'wrapper' => 'audition_block_timerange_'.$count
+      //      );
 
       $count++;
     }
@@ -90,7 +117,7 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
 
 
 function _auditioneer_timeblock_ajax(&$form, $form_state){
- 
+
   $commands = array();
   $count = 0;
   while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
@@ -105,7 +132,7 @@ function _auditioneer_timeblock_ajax(&$form, $form_state){
 /*
 function auditioneer_form_submit($form, &$form_state){
 }
-*/
+ */
 
 /**
  * Implements validation from the Form API.
@@ -125,27 +152,27 @@ function auditioneer_form_validate($form, &$form_state){
       break;
     }
     $form_elt = "field_auditioneer_time_blocks][".LANGUAGE_NONE."][$count][field_auditioneer_timerange][und";
+    list($start, $end) = _auditioneer_get_datetime_from_datefield_array($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]);
 
-    $start = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']);
-    $end = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']);
+    $start_stamp = $start->getTimestamp();
+    $end_stamp = $end->getTimestamp();
 
-    if(($end - $start)/3600 > 12){
+    if(($end_stamp - $start_stamp)/3600 > 12){
       form_set_error($form_elt, "Time blocks cannot span more than 12 hours");
-    } elseif(($end - $start) < 900) {
+    } elseif(($end_stamp - $start_stamp) < 900) {
       form_set_error($form_elt, "Time blocks must be 15 minutes or longer");
     }
     $subcount = 0;
     while(array_key_exists($subcount, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
       if($count == $subcount){
-	$subcount++;
-	continue;
+        $subcount++;
+        continue;
       }
-      $substart = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$subcount]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value']);
-      $subend = strtotime($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$subcount]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['value2']);
+      list($substart, $subend) = _auditioneer_get_datetime_from_datefield_array($form_state['values']['field_auditioneer_time_blocks'][LANGUAGE_NONE][$subcount]['field_auditioneer_timerange'][LANGUAGE_NONE][0]);
       $form_subelt = "field_auditioneer_time_blocks][".LANGUAGE_NONE."][$subcount][field_auditioneer_timerange][und";
-      if (($substart >= $start && $substart <= $end) ||
-	  ($subend >= $start && $subend <= $end)){
-	form_set_error($form_subelt, "Audition time block ".date('Y-m-d H:i:s', $substart)." - ".date('Y-m-d H:i:s', $subend)." overlaps with another block");
+      if (($substart->getTimestamp() > $start_stamp && $substart->getTimestamp() < $end_stamp) ||
+        ($subend->getTimestamp() > $start_stamp && $subend->getTimestamp() < $end_stamp)){
+        form_set_error($form_subelt, "Audition time block ".$substart->format('l F jS g:ia')." - ".$subend->format('g:ia')." overlaps with another block.");
       }
       $subcount++;
     }

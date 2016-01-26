@@ -76,7 +76,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
     <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist.</div>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png'> = View the uploaded resume of this auditioner.</div>
+    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png'> = View the uploaded resume of this auditioner, if available.</div>
     </div>";
 
 $form['instructions'] = array(
@@ -425,7 +425,9 @@ function auditioneer_manage($nid) {
   // Skip auditions that have ended, obviously
   list($start, $end) = _auditioneer_get_times($audition);
   if($end < time()){
-    $output['#markup'] = "<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
+    $foo = new DateTime();
+    $foo->setTimestamp($end);
+    $output['#markup'] = $foo->format('l F jS g:ia')."<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
     return $output;
   }
 

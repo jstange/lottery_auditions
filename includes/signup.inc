@@ -112,7 +112,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   }
   $req_contact_fields = Array();
   $avail_contact_fields = Array();
-  $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect');
+  $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect', 'auditioneer_audition_signup_form');
   if(is_array($contact_items) && array_key_exists('#items', $contact_items) && is_array($contact_items['#items'])){
     foreach ($contact_items['#items'] as $delta => $value){
       $req_contact_fields[] = $value['value'];
@@ -120,11 +120,11 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     }
   }
 
-  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'full');
-  $address = "<div class='auditioneer_audition_address'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_location'))."</div>";
-  $instructions = "<div class='auditioneer_audition_instructions'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_instructions'))."</div>";
-  $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline'));
-  $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline');
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
+  $address = "<div class='auditioneer_audition_address'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_location', 'auditioneer_audition_signup_form'))."</div>";
+  $instructions = "<div class='auditioneer_audition_instructions'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_instructions', 'auditioneer_audition_signup_form'))."</div>";
+  $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline', 'auditioneer_audition_signup_form'));
+  $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline', 'auditioneer_audition_signup_form');
   $deadline_time = strtotime($deadline_str['#items'][0]['value']);
   $banner_text = "";
   if(time() >= $deadline_time){
@@ -159,7 +159,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $form['#attributes'] = array('class' => array('auditioneer_audition_signup'));
   $form['#submit'] = array('auditioneer_audition_signup_submit_callback');
   $form['#validate'] = array('auditioneer_audition_signup_validate_callback');
-  //  list($start, $end) = _auditioneer_get_times($audition);
+//  list($start, $end) = _auditioneer_get_times($audition);
   $banner = "";
   if(!$disabled){
     $form['audition_signup_fieldset']['submit'] = array(
@@ -247,6 +247,9 @@ function _auditioneer_signup_form($form, &$form_state, $args){
         }
       }
     }
+    if($disabled){
+      $date_disabled = true;
+    }
     if(array_key_exists("field_auditioneer_collect", $realitem)){
       foreach ($realitem['field_auditioneer_collect']['#items'] as $delta => $value){
         if($checked == 1){
@@ -300,7 +303,9 @@ function _auditioneer_signup_form($form, &$form_state, $args){
 
     if(!$date_disabled){
       $form['audition_signup_fieldset'][$current_day]['timeblock_'.$count]['#default_value'] = $checked;
-      $form['audition_signup_fieldset'][$current_day]['timeblock_'.$count]['#attributes']["checked"] = "checked";
+      if($checked == 1){
+        $form['audition_signup_fieldset'][$current_day]['timeblock_'.$count]['#attributes']["checked"] = "checked";
+      }
     }
 
   }
@@ -309,6 +314,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#type' => 'radios',
       '#title' => t("Type of audition (choose one):"),
       '#required' => true,
+      '#disabled' => $disabled,
       '#options' => $aud_type_opts,
       '#prefix' => '<div class="auditioneer_audition_slot_type_radios">',
       '#suffix' => "</div>",
@@ -330,6 +336,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#type' => 'textfield',
       '#size' => 25,
       '#name' => 'name',
+      '#disabled' => $disabled,
       '#title' => t('Name').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 90,
       '#attributes' => array('class' => array('auditioneer_signup_contact_name'))
@@ -347,6 +354,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     $form['audition_signup_fieldset']['contact_panel']['email'] = array(
       '#type' => 'textfield',
       '#size' => 25,
+      '#disabled' => $disabled,
       '#name' => 'email',
       '#title' => t('Email').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 91,
@@ -366,6 +374,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#type' => 'textfield',
       '#name' => 'phone',
       '#size' => 16,
+      '#disabled' => $disabled,
       '#title' => t('Phone').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 92,
       '#attributes' => array('class' => array('auditioneer_signup_contact_phone'))
@@ -383,6 +392,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     $form['audition_signup_fieldset']['contact_panel']['contact_resume'] = array(
       '#type' => 'file',
       '#name' => 'files[resume]',
+      '#disabled' => $disabled,
       '#title' => t('Photo/Resume').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 93,
       '#upload_validators' => array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")),
@@ -416,21 +426,21 @@ function auditioneer_forms($form_id, $args) {
 function auditioneer_audition_signup_validate_callback($form, &$form_state){
   global $user;
   $count = 0;
-  $timeblocks = array();
+  $selected_blocks = array();
   $nid = $form_state['input']['audition_id'];
   $audition = node_load($form_state['input']['audition_id']);
 
   $req_contact_fields = Array();
-  $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect');
+  $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect', 'auditioneer_audition_signup_form');
   foreach ($contact_items['#items'] as $delta => $value){
     $req_contact_fields[] = $value['value'];
   }
 
 
-  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
   while (array_key_exists($count, $timeblocks)){
     if(array_key_exists("${nid}_timeblock_$count", $form_state['input'])){
-      $timeblocks[] = $count;
+      $selected_blocks[] = $count;
       $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
       foreach ($realitem['field_auditioneer_collect']['#items'] as $delta => $value){
         $req_contact_fields[] = $value['value'];
@@ -438,7 +448,7 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
     }
     $count++;
   }
-  if(count($timeblocks) == 0){
+  if(count($selected_blocks) == 0){
     form_set_error("", "You must sign up for at least one block of time");
   }
 
@@ -485,7 +495,7 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   print $user->uid;
   $nid = $form_state['input']['audition_id'];
   $audition = node_load($form_state['input']['audition_id']);
-  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
   $requested_blocks = array();
   $count = 0;
   $slot_type = null;

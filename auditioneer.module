@@ -242,7 +242,7 @@ function auditioneer_menu() {
       continue;
     }
     $items['admin/config/people/auditions/'.$nid] = array(
-      'title' => $audition->title,
+      'title' => "Audition: ".$audition->title,
       'description' => drupal_render(field_view_field('node', $audition, 'field_auditioneer_time_blocks')),
       'page callback' => 'auditioneer_manage',
       'page arguments' => array(4),
@@ -255,7 +255,7 @@ function auditioneer_menu() {
   $items['admin/config/people/auditions/audition_settings'] = array(
     'title' => 'Global Audition Settings',
     'weight' => -100,
-    'description' => 'Configuration settings for the Auditioneer module.',
+    'description' => 'Configuration settings for the Auditioneer module. Use this to customize signup messaging, colors, etc.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('auditioneer_admin'),
     'access callback' => 'user_access',

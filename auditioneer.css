@@ -358,6 +358,10 @@ fieldset.audition_mgmt_slot_entry div.form-item {
 fieldset.audition_mgmt_slot_entry div.form-item img.audition_signup_mgmt_button {
   height:1.1em;
   position:relative;
+  background-color:#e4e4e4;
+  border-bottom:1px solid #b4b4b4;
+  border-right:1px solid #b4b4b4;
+  border-radius:0.6em;
 }
 div.audition_waitlist .audition_mgmt_table_auditioner_label,
 div.audition_reject_mgmt_form .audition_mgmt_table_auditioner_label,

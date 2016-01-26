@@ -53,6 +53,22 @@ function auditioneer_install() {
     ->execute();
   variable_set('date_format_auditioneer_full_date', 'l F jS, Y');
 
+  db_insert('date_formats')
+    ->fields(array(
+      'format' => 'l F jS, Y g:ia',
+      'type' => 'auditioneer_full_date_time',
+      'locked' => 0,
+    ))
+    ->execute();
+  db_insert('date_format_type')
+    ->fields(array(
+      'type' => 'auditioneer_full_date_time',
+      'title' => 'Audition (Full Date with Time)',
+      'locked' => 0,
+    ))
+    ->execute();
+  variable_set('date_format_auditioneer_full_date_time', 'l F jS, Y g:ia');
+
   variable_set('auditioneer_signup_open_message', t("Indicate your availability below and click <strong>Sign Up</strong> to be eligible to audition."));
   variable_set('auditioneer_signup_closed_message', t("<strong>The signup deadline has passed, but you are already registered</strong>. Once auditioners have been selected, you will be notified of your status."));
   variable_set('auditioneer_signup_closed_nosignup_message', t("<strong>The signup deadline has passed</strong>."));
