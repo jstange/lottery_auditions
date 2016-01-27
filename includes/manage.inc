@@ -172,7 +172,7 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $slot_num = "")
 function _auditioneer_mgmt_form($form, &$form_state, $args){
   global $user;
   $nid = $args[0];
-  $audition = $args[1];
+  $audition = node_load($nid);
 /*
   $trace = debug_backtrace();
   foreach ($trace as $stack => $caller){
@@ -221,6 +221,22 @@ $form['instructions'] = array(
   '#type' => 'item',
   '#prefix' => "<div class='audition_signup_mgmt_instructions'>$button_descs",
   '#suffix' => "</div>"
+);
+$form['instructions']['interval'] = array(
+  '#type' => 'textfield',
+  '#title' => t("Group Interval"),
+  '#name' => 'interval',
+  '#size' => 4,
+  '#maxlength' => 3,
+  '#suffix' => " minutes ",
+  '#default_value' => $interval
+);
+$form['instructions']['saveinterval'] = array(
+  '#type' => 'submit',
+  '#name' => 'saveinterval-'.$nid,
+  '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton', 'audition_signup_mgmt_interval')),
+  '#value' => 'Update Group Interval',
+  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
 );
 $form['instructions']['bigbuttons'] = array(
   '#type' => 'item',
@@ -585,6 +601,17 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
   switch ($form_state['triggering_element']['#name']) {
+  case "saveinterval-$nid":
+    $newinterval = $form_state['input']['interval'];
+    if(!is_numeric($newinterval) || $newinterval < 10 || $newinterval > 120){
+      form_set_error("interval", "Group Interval <strong>$newinterval</strong> is invalid, must be a number between 10 and 120");
+    } else {
+      drupal_set_message("Setting interval to <strong>$newinterval</strong> minutes.");
+      $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] = $newinterval;
+      field_attach_update('node', $audition);
+      entity_get_controller('node')->resetCache(array($audition->nid));
+    }
+    break;
   case "save-$nid":
     $slot_index = 1;
     $saved = 0;

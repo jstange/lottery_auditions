@@ -480,3 +480,8 @@ fieldset.audition-mgmt-group-block > div.fieldset-wrapper {
   padding-left:0px;
   padding-right:0px;
 }
+
+div.audition_signup_mgmt_instructions div.form-item-interval label,
+div.audition_signup_mgmt_instructions div.form-item-interval {
+  display:inline-block;
+}
