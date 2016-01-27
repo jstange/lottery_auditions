@@ -16,8 +16,7 @@ function _auditioneer_get_times($audition){
   $count = $start = $end = 0;
   while(array_key_exists($count, $timeblocks)){
     $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
-    $day = field_view_field('field_collection_item', $realitem['field_auditioneer_timerange']['#object'], 'field_auditioneer_timerange', 'full');
-    $time = strtotime(preg_replace('/ to .*/', "", strip_tags($day[0]['#markup'])));
+    $time = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
     if($start == 0 || $time < $start){
       $start = $time;
     }
@@ -402,7 +401,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#attributes' => array('class' => array('auditioneer_signup_contact_resume'))
     );
     if(!empty($contact_data['resume'])){
-      $form['audition_signup_fieldset']['contact_panel']['contact_resume']['#title'] = t('Photo/Resume already uploaded as '.preg_replace("/.*?\//", "", $contact_data['resume']));
+      $form['audition_signup_fieldset']['contact_panel']['contact_resume']['#title'] = t('Photo/Resume already uploaded as <strong>'.preg_replace("/.*?\//", "", $contact_data['resume'])."</strong>.<br />You may upload a replacement if desired.");
     }
   }
 
@@ -447,8 +446,10 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
     if(array_key_exists("${nid}_timeblock_$count", $form_state['input'])){
       $selected_blocks[] = $count;
       $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
-      foreach ($realitem['field_auditioneer_collect']['#items'] as $delta => $value){
-        $req_contact_fields[] = $value['value'];
+      if(isset($realitem['field_auditioneer_collect']['#items'])){
+        foreach ($realitem['field_auditioneer_collect']['#items'] as $delta => $value){
+          $req_contact_fields[] = $value['value'];
+        }
       }
     }
     $count++;
@@ -472,7 +473,11 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
   }
 
   if(in_array("Photo/Resume", $req_contact_fields)){
-    $file = file_save_upload('resume', array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")));
+    $dir = 'public://auditioneer_'.$nid;
+    if(!file_prepare_directory($dir)){
+      drupal_mkdir($dir);
+    }
+    $file = file_save_upload('resume', array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")), $dir);
     if(empty($file)){
       $contact_data = array();
       $ext_requests = db_select('auditioneer_signups', 's')
@@ -526,8 +531,14 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   }
 
   $validators = array();
-  drupal_mkdir('public://auditioneer_'.$nid);
-  $file = file_save_upload('resume', $validators, 'public://auditioneer_'.$nid.'/');
+  // XXX provide option to use private:// instead
+  // XXX This seems not only redundant to _validate, but to get ignored if
+  // they're different. Go figure.
+  $dir = 'public://auditioneer_'.$nid;
+  if(!file_prepare_directory($dir)){
+    drupal_mkdir($dir);
+  }
+  $file = file_save_upload('resume', array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")), $dir);
   if(!empty($file)){
     $contact['resume'] = $file->uri;
   }
@@ -538,6 +549,10 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
     ->condition('uid', $user->uid)
     ->execute()
     ->fetchAssoc();
+  $ext_contact = unserialize($ext_request['contact_data']);
+  if(!is_array($ext_contact)){
+    $ext_contact = array();
+  }
 
   db_delete('auditioneer_signups')
     ->condition('nid', $form_state['input']['audition_id'])
@@ -549,7 +564,7 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
       'uid' => $user->uid,
       'slot_type' => $slot_type,
       'availability' => serialize($requested_blocks),
-      'contact_data' => serialize(array_merge(unserialize($ext_request['contact_data']), $contact))
+      'contact_data' => serialize(array_merge($ext_contact, $contact))
     ))
     ->execute();
 
