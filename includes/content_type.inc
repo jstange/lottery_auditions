@@ -102,6 +102,10 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
     unset($form['field_auditioneer_finalized']); // internal-use field, hide from users
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#value'] = "US"; // XXX why doesn't #default_value work?
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#weight'] = 500;
+    $form['options']['status']['#default_value'] = 0;
+    $form['options']['promote']['#default_value'] = 0;
+    unset($form['actions']['preview']);
+
     while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
 
       //      $form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#ajax'] = array(

@@ -66,6 +66,9 @@ function auditioneer_signup_page($nid = null){
       }
       $output['#markup'] .= drupal_render(drupal_get_form('audition_signup_'.$nid, $nid, $audition));
     }
+    if($output['#markup'] == ""){
+      $output['#markup'] = "<h2>There are no upcoming auditions at this time</h2>";
+    }
     return $output;
   }
 
@@ -256,13 +259,13 @@ function _auditioneer_signup_form($form, &$form_state, $args){
           $req_contact_fields[] = $value['value'];
         }
         if($value['value'] == "Name"){
-          $contact_fields[] = ".form-item-contact-name";
+          $contact_fields[] = ".form-item-name";
         } elseif($value['value'] == "Email"){
-          $contact_fields[] = ".form-item-contact-email";
+          $contact_fields[] = ".form-item-email";
         } elseif($value['value'] == "Phone"){
-          $contact_fields[] = ".form-item-contact-phone";
+          $contact_fields[] = ".form-item-phone";
         } elseif($value['value'] == "Photo/Resume"){
-          $contact_fields[] = ".form-item-files-contact-resume";
+          $contact_fields[] = ".form-item-files-resume";
         }
         $avail_contact_fields[] = $value['value'];
       }
@@ -270,8 +273,8 @@ function _auditioneer_signup_form($form, &$form_state, $args){
 
     $paintbox_class .= " ${nid}_auditioneer_slot_type_paint";
     $times = field_view_field('field_collection_item', $realitem['field_auditioneer_timerange']['#object'], 'field_auditioneer_timerange', 'auditioneer_audition_signup_form');
-    $day = field_view_field('field_collection_item', $realitem['field_auditioneer_timerange']['#object'], 'field_auditioneer_timerange', 'full');
-    $current_day = strip_tags($day[0]['#markup']);
+    $day = field_view_field('field_collection_item', $realitem['field_auditioneer_timerange']['#object'], 'field_auditioneer_timerange');
+    $current_day = preg_replace("/ - .*/", "", strip_tags($day[0]['#markup']));
     $print_day = "";
     if(!array_key_exists($current_day, $form['audition_signup_fieldset'])){
       $print_day = "<h4 class='auditioneer_audition_timeblock_day_title'>$current_day</h4>";
@@ -393,7 +396,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#type' => 'file',
       '#name' => 'files[resume]',
       '#disabled' => $disabled,
-      '#title' => t('Photo/Resume').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
+      '#title' => t('Upload Photo/Resume').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 93,
       '#upload_validators' => array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")),
       '#attributes' => array('class' => array('auditioneer_signup_contact_resume'))
@@ -432,8 +435,10 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
 
   $req_contact_fields = Array();
   $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect', 'auditioneer_audition_signup_form');
-  foreach ($contact_items['#items'] as $delta => $value){
-    $req_contact_fields[] = $value['value'];
+  if(is_array($contact_items) && array_key_exists('#items', $contact_items)){
+    foreach ($contact_items['#items'] as $delta => $value){
+      $req_contact_fields[] = $value['value'];
+    }
   }
 
 

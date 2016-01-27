@@ -134,6 +134,7 @@ function auditioneer_install() {
     }
     field_create_instance($instance);
   }
+  variable_set('comment_auditioneer_audition', '0');
   cache_clear_all();
 }
 
@@ -1121,7 +1122,7 @@ function _auditioneer_field_instances() {
       'module' => 'addressfield',
       'settings' => array(
         'available_countries' => array(),
-        'default_country' => '',
+        'default_country' => 'US',
         'format_handlers' => array(
           'address' => 'address',
           'address-hide-country' => 'address-hide-country',
