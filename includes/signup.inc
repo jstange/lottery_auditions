@@ -182,7 +182,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_signedup_color').";'>".variable_get('auditioneer_signup_signedup_banner', "")."</div>";
       $form['audition_signup_fieldset']['info_panel']['#suffix'] .= "<div class='auditioneer_audition_infoblock'><div class='auditioneer_audition_deadline'>$deadline</div><div class='auditioneer_audition_message'>".variable_get('auditioneer_signup_closed_message', "")."</div></div>";
     } else {
-      $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_closed_nosignup_color').";'>".variable_get('auditioneer_signup_closed_banner', "")."</div>";
+      $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_closed_nosignup_color').";'>".variable_get('auditioneer_signup_closed_nosignup_banner', "")."</div>";
       $form['audition_signup_fieldset']['info_panel']['#suffix'] .= "<div class='auditioneer_audition_infoblock'><div class='auditioneer_audition_deadline'>$deadline</div><div class='auditioneer_audition_message'>".variable_get('auditioneer_signup_closed_nosignup_message', "")."</div></div>";
     }
   }

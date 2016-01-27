@@ -414,18 +414,24 @@ div.audition_signup_mgmt_instructions {
   clear:both;
 }
 div.audition_signup_mgmt_instructions > div#edit-instructions,
-div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs {
+div.audition_signup_mgmt_instructions div.audition_signup_mgmt_button_descs {
   display:inline-block;
-  margin-bottom:2em;
+  margin-bottom:0.5em;
   position:relative;
 }
-div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs {
-  width:53%;
-  position:absolute;
+div.audition_signup_mgmt_instructions div.audition_signup_mgmt_button_descs {
+  max-width:35%;
+  position:relative;
   white-space:normal;
-  bottom:0px;
-  right:0px;
   float:right;
+}
+div.audition_signup_mgmt_instructions > div#edit-instructions {
+  width:100%;
+  margin-bottom:0px;
+  padding-bottom:0px;
+}
+div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs div {
+  font-size:x-small;
 }
 div.audition_signup_mgmt_instructions > div.form-item {
   width:45%;
@@ -437,9 +443,9 @@ div.audition_signup_mgmt_button_descs img {
   max-height:1em;
 }
 div.audition_signup_mgmt_submit {
-  font-size:small;
+  font-size:x-small;
   display:block;
-  float:left;
+/*  float:left; */
 }
 
 fieldset.auditioneer_audition_signup_contact_panel {
@@ -458,8 +464,8 @@ fieldset.auditioneer_audition_signup_contact_panel input {
 
 div.audition_signup_mgmt_submit input.audition_signup_mgmt_bigbutton {
   display:block;
-  margin-bottom:0px;
-  margin-top:1em;
+  margin-bottom:0.2em;
+  margin-top:0.5em;
 /*
   position:relative;
   padding:0px;
@@ -483,5 +489,43 @@ fieldset.audition-mgmt-group-block > div.fieldset-wrapper {
 
 div.audition_signup_mgmt_instructions div.form-item-interval label,
 div.audition_signup_mgmt_instructions div.form-item-interval {
+  font-size:x-small;
+  line-height:1.2em;
   display:inline-block;
+}
+div.audition_signup_mgmt_instructions {
+  line-height:1.2em;
+  font-size:x-small;
+}
+div.audition_signup_mgmt_button_descs {
+  line-height:1.2em;
+  float:right;
+  margin-bottom:0px;
+}
+div.audition_signup_mgmt_bigbuttons {
+  max-width:60%;
+  line-height:1.2em;
+  display:inline-block;
+  float:left;
+}
+div.audition_signup_mgmt_finalize {
+  display:inline-block;
+  text-align:right;
+  white-space:normal;
+  float:right;
+  max-width:35%;
+}
+div.audition_signup_mgmt_finalize input {
+  display:block;
+  font-size:medium;
+  clear:both;
+  float:right;
+  border:1px dotted red;
+  margin-bottom:0.2em;
+}
+div.audition_signup_mgmt_finalize p {
+  clear:both;
+  text-align:right;
+  margin-top:0.5em;
+  margin-bottom:0px;
 }

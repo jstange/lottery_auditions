@@ -83,7 +83,7 @@ function _auditioneer_sort_signups($a, $b){
   return ($a['name'] < $b['name']) ? -1 : 1;
 }
 
-function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $slot_num = ""){
+function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $slot_num = ""){
   if(!empty($req['contact_data']['resume'])){
     $slot['resume'] = array(
       '#type' => 'item',
@@ -94,6 +94,10 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $slot_num = "")
         'class' => array('audition_signup_mgmt_button')
       )
     );
+  }
+
+  if($finalized){
+    return;
   }
 
   $slot_ajax = array(
@@ -173,6 +177,10 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   global $user;
   $nid = $args[0];
   $audition = node_load($nid);
+  $finalized = false;
+  if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+    $finalized = true;
+  }
 /*
   $trace = debug_backtrace();
   foreach ($trace as $stack => $caller){
@@ -209,279 +217,302 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     '#value' => $nid
   );
 
-  $button_descs = "<div class='audition_signup_mgmt_button_descs'>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png'> = View the uploaded resume of this auditioner, if available.</div>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/save.png'> = Save the current occupant of this audition slot.</div>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
-    <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>
-    </div>";
-
-$form['instructions'] = array(
-  '#type' => 'item',
-  '#prefix' => "<div class='audition_signup_mgmt_instructions'>$button_descs",
-  '#suffix' => "</div>"
-);
-$form['instructions']['interval'] = array(
-  '#type' => 'textfield',
-  '#title' => t("Group Interval"),
-  '#name' => 'interval',
-  '#size' => 4,
-  '#maxlength' => 3,
-  '#suffix' => " minutes ",
-  '#default_value' => $interval
-);
-$form['instructions']['saveinterval'] = array(
-  '#type' => 'submit',
-  '#name' => 'saveinterval-'.$nid,
-  '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton', 'audition_signup_mgmt_interval')),
-  '#value' => 'Update Group Interval',
-  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
-);
-$form['instructions']['bigbuttons'] = array(
-  '#type' => 'item',
-  '#prefix' => "<div class='audition_signup_mgmt_bigbuttons'>",
-  '#suffix' => "</div>"
-);
-
-$form['instructions']['bigbuttons']['save'] = array(
-  '#type' => 'submit',
-  '#name' => 'save-'.$nid,
-  '#weight' => 100,
-  '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton')),
-  '#value' => 'Save All Slot Assignments',
-  '#prefix' => "<div class='audition_signup_mgmt_submit'>",
-  '#suffix' => "Save all <span class='unsaved'>unsaved</span> slots with current assignments. Slots marked as <span class='unsaved'>unsaved</span> (*) are not yet officially assigned.</div>",
-  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
-);
-$form['instructions']['bigbuttons']['unassign'] = array(
-  '#type' => 'submit',
-  '#name' => 'unassign-'.$nid,
-  '#weight' => 101,
-  '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton')),
-  '#value' => 'Unsave All Saved Slots',
-  '#prefix' => "<div class='audition_signup_mgmt_submit'>",
-  '#suffix' => " Remove all current assignments, including those that have already been <span class='saved'>saved</span>, and replace them with new (<span class='unsaved'>unsaved</span>) ones randomly selected from the <span class='unassigned'>waitlist</span>.</div>",
-  '#submit' => array('auditioneer_audition_mgmt_submit_callback')
-);
-
-
-$form['slots'] = array(
-  '#type' => 'item',
-  '#prefix' => "<div class='audition_signup_mgmt_slots'>",
-  '#suffix' => "</div>"
-);
-$form['slots']['audition_mgmt_unassigned_list'] = array(
-  '#prefix' => "<div id='audition_mgmt_unassigned_list_$nid' class='audition_mgmt_unassigned_list'>",
-  '#suffix' => "</div>",
-  '#weight' => 111,
-  '#type' => "fieldset"
-);
-
-$form['slots']['audition_mgmt_unassigned_list']['reject_list'] = array(
-  '#prefix' => "<div id='audition_rejectlist_$nid' class='audition_rejectlist'>",
-  '#suffix' => "</div>",
-  '#tree' => true,
-  '#type' => "fieldset",
-  '#title' => t("Ineligible (".count($disqualified).")"),
-  '#title_display' => "before"
-);
-foreach ($disqualified as $dq_count => $req){
-  $slot_type = "";
-  if(!empty($req['slot_type'])){
-    $slot_type = " (".$req['slot_type'].")";
-  }
-  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count] = array(
-    '#type' => "fieldset",
-    '#title_display' => "before",
-    '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
-    '#attributes' => array(
-      'class' => array('audition_mgmt_reject_entry', 'reject'),
-      'id' => array('audition_mgmt_reject_entry_'.$nid."_".$dq_count)
-    ),
-  );
-  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['uid'] = array(
-    '#type' => 'hidden',
-    '#value' => $req['uid'],
-    '#name' => 'uid'
-  );
-  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['username'] = array(
-    '#type' => 'hidden',
-    '#value' => $req['name'],
-    '#name' => 'username'
-  );
-  $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['mail'] = array(
-    '#type' => 'hidden',
-    '#value' => $req['mail'],
-    '#name' => 'mail'
-  );
-  _auditioneer_add_mgmt_slot_buttons($req, "rejected", $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count], $dq_count);
-}
-
-
-$form['slots']['audition_mgmt_table'] = array(
-  '#prefix' => "<div class='audition_signup_mgmt_form' id='audition_signup_mgmt_form_$nid'>",
-  '#suffix' => "</div>",
-  '#title' => t("Current Assignments (".count($placements)." saved)"),
-  '#title_display' => "before",
-  '#type' => "fieldset",
-  '#weight' => 110,
-  '#attributes' => array(
-    'class' => array('audition_mgmt_table')
-  )
-  //    '#theme' => 'auditioneer_components',
-);
-
-shuffle($unplaced); // Randomize the starting point for who gets a slot
-
-$interval_s = $interval*60;
-
-$timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
-$tblock_count = 0;
-$slot_index = 1;
-$saved_count = count($placements);
-while(array_key_exists($tblock_count, $timeblocks)){
-  $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
-  $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
-  $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
-  $group = 0;
-  $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
-  $slot_types = array();
-  if(array_key_exists('field_auditioneer_restrict_slot', $realitem)){
-    foreach ($realitem['field_auditioneer_restrict_slot']['#items'] as $slottype){
-      $slot_types[] = $slottype['value'];
-    }
+  $button_descs = "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png'> = View the uploaded resume of this auditioner, if available.</div>";
+  if(!$finalized){
+    $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/save.png'> = Save the current occupant of this audition slot.</div>
+      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
+      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
+      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>";
   }
 
-  $slots_per_group = ceil($block_slots/(($end - $start)/$interval_s));
-  while($start + $group < $end){
-    $group_start = $start+$group;
-    $group_end = $start+$group + $interval_s;
-    if($group_end > $end){
-      $group_end = $end;
-    }
-    $group_start_dt = new DateTime();
-    $group_start_dt->setTimestamp($group_start);
-    $group_end_dt = new DateTime();
-    $group_end_dt->setTimestamp($group_end);
-
-    $form['slots']['audition_mgmt_table'][$group_start] = array(
-      '#type' => "fieldset",
-      '#tree' => true,
-      '#title' => $group_start_dt->format("l F jS g:ia")." - ".$group_end_dt->format("g:ia"),
-      '#title_display' => 'before',
-      '#attributes' => array('class' => array('audition-mgmt-group-block'))
+  $form['instructions'] = array(
+    '#type' => 'item',
+    '#prefix' => "<div class='audition_signup_mgmt_instructions'>",
+    '#suffix' => "</div>"
+  );
+  $form['instructions']['audition_signup_mgmt_button_descs'] = array(
+    '#type' => 'item',
+    '#prefix' => "<div class='audition_signup_mgmt_button_descs'>",
+    '#suffix' => "</div>",
+    '#markup' => $button_descs,
+  );
+  if(!$finalized){
+    $form['instructions']['finalize'] = array(
+      '#type' => 'submit',
+      '#name' => 'finalize-'.$nid,
+      '#weight' => 500,
+      '#value' => 'FINALIZE',
+      '#prefix' => "<div class='audition_signup_mgmt_finalize'>",
+      '#suffix' => "<p>Save all remaining <span class='unsaved'>unsaved</span> slots with their occupants, lock this form, and notify all users of their official status, audition times, etc. Do not press until you're ready for auditioners to be contacted!<p></div>",
+      '#description' => "Save all occupied slots, lock this form, and notify users by email as to their status.",
+      '#submit' => array('auditioneer_audition_mgmt_submit_callback')
     );
-    if(count($slot_types) > 0){
-      $form['slots']['audition_mgmt_table'][$group_start]['#title'] .= " (".implode(", ", $slot_types).")";
-    }
-
-    for($i=0; $i<$slots_per_group; $i++){
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index] = array(
-        '#type' => "fieldset",
-        '#attributes' => array(
-          'class' => array('audition_mgmt_slot_entry'),
-          'id' => array('audition_mgmt_slot_entry_'.$nid."_".$slot_index)
-        ),
-      );
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid'] = array(
-        '#type' => 'hidden',
-        '#name' => 'uid'
-      );
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username'] = array(
-        '#type' => 'hidden',
-        '#name' => 'username'
-      );
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail'] = array(
-        '#type' => 'hidden',
-        '#name' => 'mail'
-      );
-      $req = null;
-      $saved = false;
-      if(array_key_exists($slot_index, $placements)){
-        $req = $placements[$slot_index];
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "saved";
-        $saved = true;
-      } elseif(count($unplaced) > 0){
-        $req = _auditioneer_assign_slot($unplaced, $realitem['field_auditioneer_timerange']['#items'][0], $slot_types);
-        $tentative[] = $req;
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "unsaved";
-      }
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title_display'] = "before";
-      if($req != null && $nid && $req['uid']){
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a></div>";
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid']['#value'] = $req['uid'];
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail']['#value'] = $req['mail'];
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username']['#value'] = $req['name'];
-        _auditioneer_add_mgmt_slot_buttons($req, "main", $form['slots']['audition_mgmt_table'][$group_start][$slot_index], $slot_index);
-        $slot_ajax = array(
-          'callback' => 'auditioneer_audition_mgmt_submit_callback',
-          'wrapper' => 'audition_mgmt_slot_entry_'.$nid."_".$slot_index,
-          'method' => 'replace',
-          'effect' => 'fade'
-        );
-        $req['placement'] = $slot_index;
-        $placements[$slot_index] = $req;
-      } else {
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'>&lt;available&gt;</div>";
-        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "unassigned";
-      }
-      $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['weight'] = array(
-        '#type' => 'hidden',
-        '#delta' => 1000,
-        '#default_value' => $slot_index,
-        '#title' => t('Weight'),
-        '#title_display' => 'invisible',
-        '#attributes' => array('class' => array('item-row-weight')),
-      );
-      $slot_index++;
-    }
-    $group += $interval_s;
   }
-  $tblock_count++;
-}
-$form['slots']['audition_mgmt_table']['#title'] = t("Current Assignments ($saved_count, ".count($tentative)." unsaved)");
+  $form['instructions']['bigbuttons'] = array(
+    '#type' => 'item',
+    '#prefix' => "<div class='audition_signup_mgmt_bigbuttons'>",
+    '#suffix' => "</div>"
+  );
 
-$wl_count = count($unplaced)-count($tentative);
-if($wl_count < 0){
-  $wl_count = 0;
-}
+  if(!$finalized){
+    $form['instructions']['bigbuttons']['save'] = array(
+      '#type' => 'submit',
+      '#name' => 'save-'.$nid,
+      '#weight' => 1,
+      '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton')),
+      '#value' => 'Save All Slot Assignments',
+      '#prefix' => "<div class='audition_signup_mgmt_submit'>",
+      '#suffix' => "Save all <span class='unsaved'>unsaved</span> slots with current assignments. Slots marked as <span class='unsaved'>unsaved</span> (*) are not yet officially assigned.</div>",
+      '#submit' => array('auditioneer_audition_mgmt_submit_callback')
+    );
+    $form['instructions']['bigbuttons']['unassign'] = array(
+      '#type' => 'submit',
+      '#name' => 'unassign-'.$nid,
+      '#weight' => 2,
+      '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton')),
+      '#value' => 'Unsave All Saved Slots',
+      '#prefix' => "<div class='audition_signup_mgmt_submit'>",
+      '#suffix' => " Remove all current assignments, including those that have already been <span class='saved'>saved</span>, and replace them with new (<span class='unsaved'>unsaved</span>) ones randomly selected from the <span class='unassigned'>waitlist</span>.</div>",
+      '#submit' => array('auditioneer_audition_mgmt_submit_callback')
+    );
+    $form['instructions']['bigbuttons']['interval'] = array(
+      '#type' => 'textfield',
+      '#title' => t("Group Interval (minutes)"),
+      '#name' => 'interval',
+      '#size' => 4,
+      '#maxlength' => 3,
+      '#weight' => 3,
+      '#default_value' => $interval
+    );
+    $form['instructions']['bigbuttons']['saveinterval'] = array(
+      '#type' => 'submit',
+      '#name' => 'saveinterval-'.$nid,
+      '#attributes' => array('class' => array('audition_signup_mgmt_bigbutton', 'audition_signup_mgmt_interval')),
+      '#value' => 'Update Group Interval',
+      '#weight' => 4,
+      '#submit' => array('auditioneer_audition_mgmt_submit_callback')
+    );
+  } else {
+    $form['instructions']['bigbuttons']['#markup'] = "<h2>Assignments have been finalized and all users notified.</h2>";
+  }
 
-$form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
-  '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
-  '#suffix' => "</div>",
-  '#tree' => true,
-  '#type' => "fieldset",
-  '#title' => t("Waitlist ($wl_count)"),
-  '#title_display' => "before"
-);
-uasort($unplaced, '_auditioneer_sort_signups');
-foreach ($unplaced as $wl_count => $req){
-  if(in_array($req, $tentative)){
-    continue;
-  }
-  $slot_type = "";
-  if(!empty($req['slot_type'])){
-    $slot_type = " (".$req['slot_type'].")";
-  }
-  $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count] = array(
+
+  $form['slots'] = array(
+    '#type' => 'item',
+    '#prefix' => "<div class='audition_signup_mgmt_slots'>",
+    '#suffix' => "</div>"
+  );
+  $form['slots']['audition_mgmt_unassigned_list'] = array(
+    '#prefix' => "<div id='audition_mgmt_unassigned_list_$nid' class='audition_mgmt_unassigned_list'>",
+    '#suffix' => "</div>",
+    '#weight' => 111,
+    '#type' => "fieldset"
+  );
+
+  $form['slots']['audition_mgmt_unassigned_list']['reject_list'] = array(
+    '#prefix' => "<div id='audition_rejectlist_$nid' class='audition_rejectlist'>",
+    '#suffix' => "</div>",
+    '#tree' => true,
     '#type' => "fieldset",
-    '#title_display' => "before",
-    '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
-    '#attributes' => array(
-      'class' => array('audition_mgmt_waitlist_entry', 'waitlist'),
-      'id' => array('audition_mgmt_waitlist_entry_'.$nid."_".$wl_count)
-    ),
+    '#title' => t("Ineligible (".count($disqualified).")"),
+    '#title_display' => "before"
   );
-  $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count]['username'] = array(
-    '#type' => 'hidden',
-    '#value' => $req['name'],
-    '#name' => 'username'
-  );
-  _auditioneer_add_mgmt_slot_buttons($req, "waitlist", $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count], $wl_count);
-}
+  foreach ($disqualified as $dq_count => $req){
+    $slot_type = "";
+    if(!empty($req['slot_type'])){
+      $slot_type = " (".$req['slot_type'].")";
+    }
+    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count] = array(
+      '#type' => "fieldset",
+      '#title_display' => "before",
+      '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
+      '#attributes' => array(
+        'class' => array('audition_mgmt_reject_entry', 'reject'),
+        'id' => array('audition_mgmt_reject_entry_'.$nid."_".$dq_count)
+      ),
+    );
+    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['uid'] = array(
+      '#type' => 'hidden',
+      '#value' => $req['uid'],
+      '#name' => 'uid'
+    );
+    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['username'] = array(
+      '#type' => 'hidden',
+      '#value' => $req['name'],
+      '#name' => 'username'
+    );
+    $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count]['mail'] = array(
+      '#type' => 'hidden',
+      '#value' => $req['mail'],
+      '#name' => 'mail'
+    );
+    _auditioneer_add_mgmt_slot_buttons($req, "rejected", $form['slots']['audition_mgmt_unassigned_list']['reject_list'][$dq_count], $finalized, $dq_count);
+  }
 
-return($form);
+
+  $form['slots']['audition_mgmt_table'] = array(
+    '#prefix' => "<div class='audition_signup_mgmt_form' id='audition_signup_mgmt_form_$nid'>",
+    '#suffix' => "</div>",
+    '#title' => t("Current Assignments (".count($placements)." saved)"),
+    '#title_display' => "before",
+    '#type' => "fieldset",
+    '#weight' => 110,
+    '#attributes' => array(
+      'class' => array('audition_mgmt_table')
+    )
+    //    '#theme' => 'auditioneer_components',
+  );
+
+  shuffle($unplaced); // Randomize the starting point for who gets a slot
+
+  $interval_s = $interval*60;
+
+  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks');
+  $tblock_count = 0;
+  $slot_index = 1;
+  $saved_count = count($placements);
+  while(array_key_exists($tblock_count, $timeblocks)){
+    $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
+    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
+    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
+    $group = 0;
+    $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
+    $slot_types = array();
+    if(array_key_exists('field_auditioneer_restrict_slot', $realitem)){
+      foreach ($realitem['field_auditioneer_restrict_slot']['#items'] as $slottype){
+        $slot_types[] = $slottype['value'];
+      }
+    }
+
+    $slots_per_group = ceil($block_slots/(($end - $start)/$interval_s));
+    while($start + $group < $end){
+      $group_start = $start+$group;
+      $group_end = $start+$group + $interval_s;
+      if($group_end > $end){
+        $group_end = $end;
+      }
+      $group_start_dt = new DateTime();
+      $group_start_dt->setTimestamp($group_start);
+      $group_end_dt = new DateTime();
+      $group_end_dt->setTimestamp($group_end);
+
+      $form['slots']['audition_mgmt_table'][$group_start] = array(
+        '#type' => "fieldset",
+        '#tree' => true,
+        '#title' => $group_start_dt->format("l F jS g:ia")." - ".$group_end_dt->format("g:ia"),
+        '#title_display' => 'before',
+        '#attributes' => array('class' => array('audition-mgmt-group-block'))
+      );
+      if(count($slot_types) > 0){
+        $form['slots']['audition_mgmt_table'][$group_start]['#title'] .= " (".implode(", ", $slot_types).")";
+      }
+
+      for($i=0; $i<$slots_per_group; $i++){
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index] = array(
+          '#type' => "fieldset",
+          '#attributes' => array(
+            'class' => array('audition_mgmt_slot_entry'),
+            'id' => array('audition_mgmt_slot_entry_'.$nid."_".$slot_index)
+          ),
+        );
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid'] = array(
+          '#type' => 'hidden',
+          '#name' => 'uid'
+        );
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username'] = array(
+          '#type' => 'hidden',
+          '#name' => 'username'
+        );
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail'] = array(
+          '#type' => 'hidden',
+          '#name' => 'mail'
+        );
+        $req = null;
+        $saved = false;
+        if(array_key_exists($slot_index, $placements)){
+          $req = $placements[$slot_index];
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "saved";
+          $saved = true;
+        } elseif(count($unplaced) > 0){
+          $req = _auditioneer_assign_slot($unplaced, $realitem['field_auditioneer_timerange']['#items'][0], $slot_types);
+          $tentative[] = $req;
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "unsaved";
+        }
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title_display'] = "before";
+        if($req != null && $nid && $req['uid']){
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a></div>";
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['uid']['#value'] = $req['uid'];
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['mail']['#value'] = $req['mail'];
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['username']['#value'] = $req['name'];
+          _auditioneer_add_mgmt_slot_buttons($req, "main", $form['slots']['audition_mgmt_table'][$group_start][$slot_index], $finalized, $slot_index);
+          $slot_ajax = array(
+            'callback' => 'auditioneer_audition_mgmt_submit_callback',
+            'wrapper' => 'audition_mgmt_slot_entry_'.$nid."_".$slot_index,
+            'method' => 'replace',
+            'effect' => 'fade'
+          );
+          $req['placement'] = $slot_index;
+          $placements[$slot_index] = $req;
+        } else {
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#title'] = "<div class='audition_mgmt_table_auditioner_label'>&lt;available&gt;</div>";
+          $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['#attributes']['class'][] = "unassigned";
+        }
+        $form['slots']['audition_mgmt_table'][$group_start][$slot_index]['weight'] = array(
+          '#type' => 'hidden',
+          '#delta' => 1000,
+          '#default_value' => $slot_index,
+          '#title' => t('Weight'),
+          '#title_display' => 'invisible',
+          '#attributes' => array('class' => array('item-row-weight')),
+        );
+        $slot_index++;
+      }
+      $group += $interval_s;
+    }
+    $tblock_count++;
+  }
+  $form['slots']['audition_mgmt_table']['#title'] = t("Current Assignments ($saved_count, ".count($tentative)." unsaved)");
+
+  $wl_count = count($unplaced)-count($tentative);
+  if($wl_count < 0){
+    $wl_count = 0;
+  }
+
+  $form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
+    '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
+    '#suffix' => "</div>",
+    '#tree' => true,
+    '#type' => "fieldset",
+    '#title' => t("Waitlist ($wl_count)"),
+    '#title_display' => "before"
+  );
+  uasort($unplaced, '_auditioneer_sort_signups');
+  foreach ($unplaced as $wl_count => $req){
+    if(in_array($req, $tentative)){
+      continue;
+    }
+    $slot_type = "";
+    if(!empty($req['slot_type'])){
+      $slot_type = " (".$req['slot_type'].")";
+    }
+    $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count] = array(
+      '#type' => "fieldset",
+      '#title_display' => "before",
+      '#title' => "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$req['name']."</a>$slot_type</div>",
+      '#attributes' => array(
+        'class' => array('audition_mgmt_waitlist_entry', 'waitlist'),
+        'id' => array('audition_mgmt_waitlist_entry_'.$nid."_".$wl_count)
+      ),
+    );
+    $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count]['username'] = array(
+      '#type' => 'hidden',
+      '#value' => $req['name'],
+      '#name' => 'username'
+    );
+    _auditioneer_add_mgmt_slot_buttons($req, "waitlist", $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count], $finalized, $wl_count);
+  }
+
+  return($form);
 }
 
 
@@ -595,6 +626,33 @@ function _auditioneer_new_form($nid, $form_state){
   $new_state += form_state_defaults();
   return drupal_rebuild_form('audition_mgmt_'.$nid, $new_state);
 }
+
+function _auditioneer_save_all_slots($groups, $form_state){
+  $slot_index = 1;
+  $saved = 0;
+  foreach ($groups as $group){
+    list($start, $end, $slots) = $group;
+    for($i=0; $i < $slots; $i++){
+      if(!empty($form_state['values'][$start][$slot_index]['uid'])){
+        $result = db_update('auditioneer_signups')
+          ->fields(array('placement' => $slot_index))
+          ->condition('nid', $form_state['values']['audition_id'])
+          ->condition('uid', $form_state['values'][$start][$slot_index]['uid'])
+          ->execute();
+        $saved++;
+      } else {
+        db_update('auditioneer_signups')
+          ->fields(array('placement' => null))
+          ->condition('nid', $form_state['values']['audition_id'])
+          ->condition('placement', $slot_index)
+          ->execute();
+      }
+      $slot_index++;
+    }
+  }
+  drupal_set_message("Saved $saved slots (".count($groups)." groups).");
+}
+
 function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $nid = $form_state['values']['audition_id'];
   $audition = node_load($form_state['values']['audition_id']);
@@ -612,30 +670,14 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       entity_get_controller('node')->resetCache(array($audition->nid));
     }
     break;
+  case "finalize-$nid":
+    _auditioneer_save_all_slots($groups, $form_state);
+    $audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] = 1;
+    field_attach_update('node', $audition);
+    entity_get_controller('node')->resetCache(array($audition->nid));
+    break;
   case "save-$nid":
-    $slot_index = 1;
-    $saved = 0;
-    foreach ($groups as $group){
-      list($start, $end, $slots) = $group;
-      for($i=0; $i < $slots; $i++){
-        if(!empty($form_state['values'][$start][$slot_index]['uid'])){
-          $result = db_update('auditioneer_signups')
-            ->fields(array('placement' => $slot_index))
-            ->condition('nid', $form_state['values']['audition_id'])
-            ->condition('uid', $form_state['values'][$start][$slot_index]['uid'])
-            ->execute();
-          $saved++;
-        } else {
-          db_update('auditioneer_signups')
-            ->fields(array('placement' => null))
-            ->condition('nid', $form_state['values']['audition_id'])
-            ->condition('placement', $slot_index)
-            ->execute();
-        }
-        $slot_index++;
-      }
-    }
-    drupal_set_message("Saved $saved slots (".count($groups)." groups).");
+    _auditioneer_save_all_slots($groups, $form_state);
     break;
   case "reassign-$nid":
     // this doesn't actually have to do anything, reloading the form will
