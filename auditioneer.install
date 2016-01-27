@@ -7,13 +7,19 @@ function auditioneer_uninstall() {
   db_delete('date_formats')
     ->condition('type', 'auditioneer_full_date')
     ->execute();
+  db_delete('date_formats')
+    ->condition('type', 'auditioneer_full_date_time')
+    ->execute();
   db_delete('date_format_type')
     ->condition('type', 'auditioneer_time')
     ->execute();
   db_delete('date_format_type')
     ->condition('type', 'auditioneer_full_date')
     ->execute();
-  foreach (array('date_format_auditioneer_time', 'date_format_auditioneer_full_date', 'auditioneer_signup_open_message', 'auditioneer_signup_closed_message', 'auditioneer_signup_closed_nosignup_message', 'auditioneer_signup_signedup_message', 'auditioneer_signup_open_color', 'auditioneer_signup_signedup_color', 'auditioneer_signup_closed_nosignup_color') as $var){
+  db_delete('date_format_type')
+    ->condition('type', 'auditioneer_full_date_time')
+    ->execute();
+  foreach (array('date_format_auditioneer_time', 'date_format_auditioneer_full_date', 'auditioneer_signup_open_message', 'auditioneer_signup_closed_message', 'auditioneer_signup_closed_nosignup_message', 'auditioneer_signup_signedup_message', 'auditioneer_signup_open_color', 'auditioneer_signup_signedup_color', 'auditioneer_signup_closed_nosignup_color', 'auditioneer_signup_open_banner', 'auditioneer_signup_signedup_banner', 'auditioneer_signup_closed_nosignup_banner', 'auditioneer_timeblock_checked_text', 'auditioneer_timeblock_checked', 'auditioneer_timeblock_unchecked_text', 'auditioneer_timeblock_unchecked', 'auditioneer_signup_path') as $var){
     variable_del($var);
   }
 
@@ -87,10 +93,6 @@ function auditioneer_install() {
   variable_set('auditioneer_timeblock_unchecked', 'LightPink');
 
   variable_set('auditioneer_signup_path', 'audition_signup');
- /* 
-  node_types_rebuild();
-   */
-  menu_rebuild();
 
   $role = user_role_load_by_name("administrator");
   if($role){
@@ -101,6 +103,38 @@ function auditioneer_install() {
   if($role){
     user_role_grant_permissions($role->rid, array('view and sign up for auditions'));
   }
+
+  if(!in_array("auditioneer_audition", node_type_get_names())){
+    echo "Creating auditioneer_audition node type\n";
+    $type = array(
+      'name' => t('Auditioneer Audition'),
+      'type' => "auditioneer_audition",
+      'base' => 'node_content',
+      'description' => t('Creates an audition event.'),
+      'custom' => 1,
+      'locked' => 0,
+      'has_title' => '1',
+      'title_label' => t('Title'),
+      'help' => '',
+    );
+    $type = node_type_set_defaults($type);
+  }
+
+  $fields = _auditioneer_field_bases();
+  foreach ($fields as $fieldname => $field){
+    if(field_info_field($fieldname)){
+      continue;
+    }
+    field_create_field($field);
+  }
+  $field_instances = _auditioneer_field_instances();
+  foreach ($field_instances as $instance_name => $instance){
+    if(field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle'])){
+      continue;
+    }
+    field_create_instance($instance);
+  }
+  cache_clear_all();
 }
 
 /*
@@ -152,4 +186,1045 @@ function auditioneer_schema() {
     )
   );
   return $schema;
+}
+function _auditioneer_field_bases() {
+  $field_bases = array();
+
+  // Exported field_base: 'field_auditioneer_alternate_name'
+  $field_bases['field_auditioneer_alternate_name'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_alternate_name',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(
+      'format' => array(
+        'columns' => array(
+          'format' => 'format',
+        ),
+        'table' => 'filter_format',
+      ),
+    ),
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 16,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
+  );
+
+  // Exported field_base: 'field_auditioneer_block_slots'
+  $field_bases['field_auditioneer_block_slots'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_block_slots',
+    'field_permissions' => array(
+      'type' => 1,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'number',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'number_integer',
+  );
+
+  // Exported field_base: 'field_auditioneer_collect'
+  $field_bases['field_auditioneer_collect'] = array(
+    'active' => 1,
+    'cardinality' => -1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_collect',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(
+      'value' => array(
+        0 => 'value',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'list',
+    'settings' => array(
+      'allowed_values' => array(
+        'Photo/Resume' => 'Photo/Resume',
+        'Name' => 'Name',
+        'Email' => 'Email',
+        'Phone' => 'Phone',
+      ),
+      'allowed_values_function' => '',
+    ),
+    'translatable' => 0,
+    'type' => 'list_text',
+  );
+
+  // Exported field_base: 'field_auditioneer_deadline'
+  $field_bases['field_auditioneer_deadline'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_deadline',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'date',
+    'settings' => array(
+      'cache_count' => 4,
+      'cache_enabled' => 0,
+      'granularity' => array(
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+        'month' => 'month',
+        'second' => 0,
+        'year' => 'year',
+      ),
+      'timezone_db' => 'UTC',
+      'todate' => '',
+      'tz_handling' => 'site',
+    ),
+    'translatable' => 0,
+    'type' => 'datetime',
+  );
+
+  // Exported field_base: 'field_auditioneer_finalized'
+  $field_bases['field_auditioneer_finalized'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_finalized',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(
+      'value' => array(
+        0 => 'value',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'list',
+    'settings' => array(
+      'allowed_values' => array(
+        0 => '',
+        1 => '',
+      ),
+      'allowed_values_function' => '',
+    ),
+    'translatable' => 0,
+    'type' => 'list_boolean',
+  );
+
+  // Exported field_base: 'field_auditioneer_group_interval'
+  $field_bases['field_auditioneer_group_interval'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_group_interval',
+    'field_permissions' => array(
+      'type' => 1,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'number',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'number_integer',
+  );
+
+  // Exported field_base: 'field_auditioneer_instructions'
+  $field_bases['field_auditioneer_instructions'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_instructions',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(
+      'format' => array(
+        'columns' => array(
+          'format' => 'format',
+        ),
+        'table' => 'filter_format',
+      ),
+    ),
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'text_long',
+  );
+
+  // Exported field_base: 'field_auditioneer_location'
+  $field_bases['field_auditioneer_location'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_location',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'addressfield',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'addressfield',
+  );
+
+  // Exported field_base: 'field_auditioneer_restrict_slot'
+  $field_bases['field_auditioneer_restrict_slot'] = array(
+    'active' => 1,
+    'cardinality' => -1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_restrict_slot',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(
+      'value' => array(
+        0 => 'value',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'list',
+    'settings' => array(
+      'allowed_values' => array(
+        'Musical' => 'Musical',
+        'Dance/Movement' => 'Dance/Movement',
+        'Monologue' => 'Monologue',
+        'Scene' => 'Scene',
+        'Combat' => 'Combat',
+      ),
+      'allowed_values_function' => '',
+    ),
+    'translatable' => 0,
+    'type' => 'list_text',
+  );
+
+  // Exported field_base: 'field_auditioneer_time_blocks'
+  $field_bases['field_auditioneer_time_blocks'] = array(
+    'active' => 1,
+    'cardinality' => -1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_time_blocks',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(
+      'revision_id' => array(
+        0 => 'revision_id',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'field_collection',
+    'settings' => array(
+      'hide_blank_items' => 1,
+      'path' => '',
+    ),
+    'translatable' => 0,
+    'type' => 'field_collection',
+  );
+
+  // Exported field_base: 'field_auditioneer_timerange'
+  $field_bases['field_auditioneer_timerange'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_timerange',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(),
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'date',
+    'settings' => array(
+      'cache_count' => 4,
+      'cache_enabled' => 0,
+      'granularity' => array(
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+        'month' => 'month',
+        'second' => 0,
+        'year' => 'year',
+      ),
+      'timezone_db' => 'UTC',
+      'todate' => 'required',
+      'tz_handling' => 'site',
+    ),
+    'translatable' => 0,
+    'type' => 'datetime',
+  );
+
+  return $field_bases;
+}
+function _auditioneer_field_instances() {
+  $field_instances = array();
+
+  // Exported field_instance: 'field_collection_item-field_auditioneer_time_blocks-field_auditioneer_alternate_name'
+  $field_instances['field_collection_item-field_auditioneer_time_blocks-field_auditioneer_alternate_name'] = array(
+    'bundle' => 'field_auditioneer_time_blocks',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'Display an alternative string to users in the signup form, instead of the range of times. E.g. "Afternoon" instead of "3:00pm - 5:00pm."',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 1,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 2,
+      ),
+      'full' => array(
+        'label' => 'hidden',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 2,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_auditioneer_alternate_name',
+    'label' => 'Alternate Name',
+    'required' => 0,
+    'settings' => array(
+      'text_processing' => 0,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'text',
+      'settings' => array(
+        'size' => 20,
+      ),
+      'type' => 'text_textfield',
+      'weight' => 3,
+    ),
+  );
+
+  // Exported field_instance: 'field_collection_item-field_auditioneer_time_blocks-field_auditioneer_block_slots'
+  $field_instances['field_collection_item-field_auditioneer_time_blocks-field_auditioneer_block_slots'] = array(
+    'bundle' => 'field_auditioneer_time_blocks',
+    'default_value' => array(
+      0 => array(
+        'value' => 30,
+      ),
+    ),
+    'deleted' => 0,
+    'description' => 'The maximum number of auditioners that can be allocated into this time block. This will <strong>not</strong> be displayed to users when they\'re signing up.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 4,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'number',
+        'settings' => array(
+          'decimal_separator' => '.',
+          'prefix_suffix' => TRUE,
+          'scale' => 0,
+          'thousand_separator' => '',
+        ),
+        'type' => 'number_integer',
+        'weight' => 0,
+      ),
+      'full' => array(
+        'label' => 'inline',
+        'module' => 'number',
+        'settings' => array(
+          'decimal_separator' => '.',
+          'prefix_suffix' => TRUE,
+          'scale' => 0,
+          'thousand_separator' => '',
+        ),
+        'type' => 'number_integer',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_auditioneer_block_slots',
+    'label' => 'Number of Slots',
+    'required' => 1,
+    'settings' => array(
+      'max' => '',
+      'min' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'number',
+      'settings' => array(),
+      'type' => 'number',
+      'weight' => 2,
+    ),
+  );
+
+  // Exported field_instance: 'field_collection_item-field_auditioneer_time_blocks-field_auditioneer_collect'
+  $field_instances['field_collection_item-field_auditioneer_time_blocks-field_auditioneer_collect'] = array(
+    'bundle' => 'field_auditioneer_time_blocks',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'Check to add (required) contact fields for users signing up for auditions in this time block. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 3,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 4,
+      ),
+      'full' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 4,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_auditioneer_collect',
+    'label' => 'Required Contact Fields',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_buttons',
+      'weight' => 6,
+    ),
+  );
+
+  // Exported field_instance: 'field_collection_item-field_auditioneer_time_blocks-field_auditioneer_restrict_slot'
+  $field_instances['field_collection_item-field_auditioneer_time_blocks-field_auditioneer_restrict_slot'] = array(
+    'bundle' => 'field_auditioneer_time_blocks',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'You can designate this time block to be used for a specific type of audition, e.g. to funnel singers into times where an accompanist is available. If any of these are set, users will be required to specify one of these options (or N/A) when signing up.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 2,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 3,
+      ),
+      'full' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 3,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_auditioneer_restrict_slot',
+    'label' => 'Restrict Audition Type',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_buttons',
+      'weight' => 4,
+    ),
+  );
+
+  // Exported field_instance: 'field_collection_item-field_auditioneer_time_blocks-field_auditioneer_timerange'
+  $field_instances['field_collection_item-field_auditioneer_time_blocks-field_auditioneer_timerange'] = array(
+    'bundle' => 'field_auditioneer_time_blocks',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'auditioneer_time',
+          'fromto' => 'both',
+          'multiple_from' => '',
+          'multiple_number' => '',
+          'multiple_to' => '',
+        ),
+        'type' => 'date_default',
+        'weight' => 0,
+      ),
+      'default' => array(
+        'label' => 'hidden',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'short',
+          'fromto' => 'both',
+          'multiple_from' => '',
+          'multiple_number' => '',
+          'multiple_to' => '',
+        ),
+        'type' => 'date_default',
+        'weight' => 1,
+      ),
+      'full' => array(
+        'label' => 'hidden',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'auditioneer_full_date',
+          'fromto' => 'both',
+          'multiple_from' => '',
+          'multiple_number' => '',
+          'multiple_to' => '',
+        ),
+        'type' => 'date_default',
+        'weight' => 1,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_auditioneer_timerange',
+    'label' => 'Time Range',
+    'required' => 1,
+    'settings' => array(
+      'default_value' => 'strtotime',
+      'default_value2' => 'same',
+      'default_value_code' => '+720 hours',
+      'default_value_code2' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'date',
+      'settings' => array(
+        'display_all_day' => 0,
+        'increment' => 15,
+        'input_format' => 'Y-m-d H:i:s',
+        'input_format_custom' => '',
+        'label_position' => 'above',
+        'text_parts' => array(),
+        'year_range' => '-3:+3',
+      ),
+      'type' => 'date_popup',
+      'weight' => 1,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_collect'
+  $field_instances['node-auditioneer_audition-field_auditioneer_collect'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'Check to add (required) contact fields for users signing up for auditions. These requirements can also be added on a per-timeblock basis, if, for example, you only want to require headshots for musical auditions. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 0,
+      ),
+      'default' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 4,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_collect',
+    'label' => 'Required Contact Fields',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_buttons',
+      'weight' => 6,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_deadline'
+  $field_instances['node-auditioneer_audition-field_auditioneer_deadline'] = array(
+    'bundle' => 'auditioneer_audition',
+    'deleted' => 0,
+    'description' => 'Date/time for signups to close, after which we can begin the process of assigning slots and notifying auditioners.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'inline',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'auditioneer_full_date_time',
+          'fromto' => 'both',
+          'multiple_from' => '',
+          'multiple_number' => '',
+          'multiple_to' => '',
+        ),
+        'type' => 'date_default',
+        'weight' => 6,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'date',
+        'settings' => array(
+          'format_type' => 'auditioneer_full_date_time',
+          'fromto' => 'both',
+          'multiple_from' => '',
+          'multiple_number' => '',
+          'multiple_to' => '',
+        ),
+        'type' => 'date_default',
+        'weight' => 2,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_deadline',
+    'label' => 'Signup Deadline',
+    'required' => 1,
+    'settings' => array(
+      'default_value' => 'strtotime',
+      'default_value2' => 'same',
+      'default_value_code' => '+21 days',
+      'default_value_code2' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'date',
+      'settings' => array(
+        'display_all_day' => 0,
+        'increment' => 15,
+        'input_format' => 'Y-m-d H:i:s',
+        'input_format_custom' => '',
+        'label_position' => 'above',
+        'text_parts' => array(),
+        'year_range' => '-0:+3',
+      ),
+      'type' => 'date_popup',
+      'weight' => 4,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_finalized'
+  $field_instances['node-auditioneer_audition-field_auditioneer_finalized'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => array(
+      0 => array(
+        'value' => 0,
+      ),
+    ),
+    'deleted' => 0,
+    'description' => 'This shouldn\'t be visible! Used internally to flag an audition\'s assignments as final.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 2,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 5,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_finalized',
+    'label' => 'Finalized',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(
+        'display_label' => 0,
+      ),
+      'type' => 'options_onoff',
+      'weight' => 10,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_group_interval'
+  $field_instances['node-auditioneer_audition-field_auditioneer_group_interval'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => array(
+      0 => array(
+        'value' => 30,
+      ),
+    ),
+    'deleted' => 0,
+    'description' => 'How long should each audition group be? Time blocks specified below will be subdivided into groups this size when audition slots are allocated. If left unspecified, time blocks will not be subdivided.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'number',
+        'settings' => array(
+          'decimal_separator' => '.',
+          'prefix_suffix' => TRUE,
+          'scale' => 0,
+          'thousand_separator' => '',
+        ),
+        'type' => 'number_integer',
+        'weight' => 3,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 6,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_group_interval',
+    'label' => 'Group Interval',
+    'required' => 0,
+    'settings' => array(
+      'max' => 60,
+      'min' => 15,
+      'prefix' => '',
+      'suffix' => 'minutes',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'number',
+      'settings' => array(),
+      'type' => 'number',
+      'weight' => 8,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_instructions'
+  $field_instances['node-auditioneer_audition-field_auditioneer_instructions'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'Anything auditioners need to know, e.g. "buzz in at side door" or "40 printed headshots and resumes are required."',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'inline',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 5,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 3,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_instructions',
+    'label' => 'Special Instructions',
+    'required' => 0,
+    'settings' => array(
+      'text_processing' => 1,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'text',
+      'settings' => array(
+        'rows' => 5,
+      ),
+      'type' => 'text_textarea',
+      'weight' => 7,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_location'
+  $field_instances['node-auditioneer_audition-field_auditioneer_location'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'inline',
+        'module' => 'addressfield',
+        'settings' => array(
+          'format_handlers' => array(
+            0 => 'address',
+          ),
+          'use_widget_handlers' => 1,
+        ),
+        'type' => 'addressfield_default',
+        'weight' => 4,
+      ),
+      'default' => array(
+        'label' => 'inline',
+        'module' => 'addressfield',
+        'settings' => array(
+          'format_handlers' => array(
+            0 => 'address',
+          ),
+          'use_widget_handlers' => 1,
+        ),
+        'type' => 'addressfield_default',
+        'weight' => 1,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_location',
+    'label' => 'Location',
+    'required' => 1,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'addressfield',
+      'settings' => array(
+        'available_countries' => array(),
+        'default_country' => '',
+        'format_handlers' => array(
+          'address' => 'address',
+          'address-hide-country' => 'address-hide-country',
+          'address-hide-postal-code' => 0,
+          'address-hide-street' => 0,
+          'organisation' => 0,
+          'name-full' => 0,
+          'name-oneline' => 0,
+          'address-optional' => 0,
+        ),
+      ),
+      'type' => 'addressfield_standard',
+      'weight' => 5,
+    ),
+  );
+
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_time_blocks'
+  $field_instances['node-auditioneer_audition-field_auditioneer_time_blocks'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'A block of time for auditions, e.g. 9:00 AM to 12:00PM. You will typically specify more than one of these for a single event. For example, you might set up four time blocks for a two day event:
+
+January 1st, 9:00 AM to 12:00PM - 30 auditioners;
+January 1st, 1:00 PM to 6:00PM - 50 auditioners;
+January 2nd, 9:00 AM to 12:00PM - 30 auditioners;
+January 2nd, 1:00 PM to 5:00PM - 40 auditioners',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'hidden',
+        'module' => 'field_collection',
+        'settings' => array(
+          'view_mode' => 'auditioneer_audition_signup_form',
+        ),
+        'type' => 'field_collection_fields',
+        'weight' => 1,
+      ),
+      'default' => array(
+        'label' => 'hidden',
+        'module' => 'field_collection',
+        'settings' => array(
+          'view_mode' => 'full',
+        ),
+        'type' => 'field_collection_fields',
+        'weight' => 0,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_time_blocks',
+    'label' => 'Time Blocks',
+    'required' => 1,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'field_collection',
+      'settings' => array(),
+      'type' => 'field_collection_embed',
+      'weight' => 9,
+    ),
+  );
+
+  // Translatables
+  // Included for use with string extractors like potx.
+  t('A block of time for auditions, e.g. 9:00 AM to 12:00PM. You will typically specify more than one of these for a single event. For example, you might set up four time blocks for a two day event:
+
+January 1st, 9:00 AM to 12:00PM - 30 auditioners;
+January 1st, 1:00 PM to 6:00PM - 50 auditioners;
+January 2nd, 9:00 AM to 12:00PM - 30 auditioners;
+January 2nd, 1:00 PM to 5:00PM - 40 auditioners');
+  t('Alternate Name');
+  t('Anything auditioners need to know, e.g. "buzz in at side door" or "40 printed headshots and resumes are required."');
+  t('Check to add (required) contact fields for users signing up for auditions in this time block. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>');
+  t('Check to add (required) contact fields for users signing up for auditions. These requirements can also be added on a per-timeblock basis, if, for example, you only want to require headshots for musical auditions. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>');
+  t('Date/time for signups to close, after which we can begin the process of assigning slots and notifying auditioners.');
+  t('Display an alternative string to users in the signup form, instead of the range of times. E.g. "Afternoon" instead of "3:00pm - 5:00pm."');
+  t('Finalized');
+  t('Group Interval');
+  t('How long should each audition group be? Time blocks specified below will be subdivided into groups this size when audition slots are allocated. If left unspecified, time blocks will not be subdivided.');
+  t('Location');
+  t('Number of Slots');
+  t('Required Contact Fields');
+  t('Restrict Audition Type');
+  t('Signup Deadline');
+  t('Special Instructions');
+  t('The maximum number of auditioners that can be allocated into this time block. This will <strong>not</strong> be displayed to users when they\'re signing up.');
+  t('This shouldn\'t be visible! Used internally to flag an audition\'s assignments as final.');
+  t('Time Blocks');
+  t('Time Range');
+  t('You can designate this time block to be used for a specific type of audition, e.g. to funnel singers into times where an accompanist is available. If any of these are set, users will be required to specify one of these options (or N/A) when signing up.');
+
+  return $field_instances;
 }
