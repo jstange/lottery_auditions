@@ -104,21 +104,19 @@ function auditioneer_install() {
     user_role_grant_permissions($role->rid, array('view and sign up for auditions'));
   }
 
-  if(!in_array("auditioneer_audition", node_type_get_names())){
-    echo "Creating auditioneer_audition node type\n";
-    $type = array(
-      'name' => t('Auditioneer Audition'),
-      'type' => "auditioneer_audition",
-      'base' => 'node_content',
-      'description' => t('Creates an audition event.'),
-      'custom' => 1,
-      'locked' => 0,
-      'has_title' => '1',
-      'title_label' => t('Title'),
-      'help' => '',
-    );
-    $type = node_type_set_defaults($type);
-  }
+  $type = array(
+    'name' => t('Auditioneer Audition'),
+    'type' => "auditioneer_audition",
+    'base' => 'node_content',
+    'description' => t('Creates an audition event.'),
+    'custom' => 1,
+    'locked' => 0,
+    'has_title' => '1',
+    'title_label' => t('Title'),
+    'help' => '',
+  );
+  $content_type = node_type_set_defaults($type);
+  node_type_save($content_type);
 
   $fields = _auditioneer_field_bases();
   foreach ($fields as $fieldname => $field){
@@ -134,6 +132,10 @@ function auditioneer_install() {
     }
     field_create_instance($instance);
   }
+  $type = node_type_set_defaults($type);
+  node_type_save($content_type);
+  menu_rebuild();
+  node_types_rebuild();
   cache_clear_all();
 }
 
