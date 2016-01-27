@@ -221,7 +221,7 @@ div.audition_signup_mgmt_form {
   column-gap: 10px;
 }
 div.audition_mgmt_unassigned_list {
-  width:18%;
+  width:25%;
   display:inline-block;
   position:relative;
   overflow:hidden;
@@ -472,4 +472,11 @@ div.audition_signup_mgmt_submit input.audition_signup_mgmt_bigbutton {
   vertical-align:middle;
   box-shadow: 0.2em 0.2em 0.1em #888888;
 */
+}
+div.audition_rejectlist > fieldset.form-wrapper > div.fieldset-wrapper,
+div.audition_waitlist > fieldset.form-wrapper > div.fieldset-wrapper,
+fieldset.audition_mgmt_table > div.fieldset-wrapper,
+fieldset.audition-mgmt-group-block > div.fieldset-wrapper {
+  padding-left:0px;
+  padding-right:0px;
 }

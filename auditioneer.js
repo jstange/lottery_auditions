@@ -82,12 +82,20 @@ jQuery(document).ready(function ($) {
       }
     }
   });
-  // XXX catch WINCH events however you do that
-  $("div.audition_signup_mgmt_form").each( function( index, element ){
-    $(this).siblings("div.audition_mgmt_unassigned_list").height($(this).outerHeight());
-    $(this).siblings("div.audition_mgmt_unassigned_list").css("height", $(this).outerHeight());
-  });
-  $('div.form-item-interval select').change(function() {
-    $(this).closest('form').submit();
+
+  function auditioneer_fix_list_height(){
+    $("div.audition_signup_mgmt_form").each( function( index, element ){
+      $(this).siblings("div.audition_mgmt_unassigned_list").height($(this).outerHeight());
+      $(this).siblings("div.audition_mgmt_unassigned_list").css("height", $(this).outerHeight());
+    });
+  }
+  /*
+    $('div.form-item-interval select').change(function() {
+      $(this).closest('form').submit();
+    });
+   */
+  auditioneer_fix_list_height();
+  $(document).ajaxStop(function(){
+    auditioneer_fix_list_height();
   });
 }(jQuery));
