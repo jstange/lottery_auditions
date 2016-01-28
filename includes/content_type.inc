@@ -60,7 +60,7 @@ function auditioneer_field_auditioneer_time_blocks_validate($element, &$form_sta
 
   if($form_state['node'] && isset($form_state['node']->nid)){
     $audition = node_load($form_state['node']->nid);
-    if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+    if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
       return;
     }
   }
@@ -99,7 +99,7 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
     $published = 0;
     if($form_state['node'] && isset($form_state['node']->nid)){
       $audition = node_load($form_state['node']->nid);
-      if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+      if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
         $finalized = true;
       }
       $published = $audition->status;
@@ -176,7 +176,7 @@ function auditioneer_form_validate($form, &$form_state){
 
   if($form_state['node'] && isset($form_state['node']->nid)){
     $audition = node_load($form_state['node']->nid);
-    if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+    if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
       return;
     }
   }
