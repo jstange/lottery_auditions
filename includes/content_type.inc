@@ -57,6 +57,13 @@ function _auditioneer_datefield_sync_dates(&$datefield){
 
 function auditioneer_field_auditioneer_time_blocks_validate($element, &$form_state, $form) {    
   $count = 0;
+
+  if($form_state['node'] && isset($form_state['node']->nid)){
+    $audition = node_load($form_state['node']->nid);
+    if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+      return;
+    }
+  }
   drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
   while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
     // XXX This is the wrong way to do this, but form_set_value just doesn't
@@ -89,11 +96,13 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
   if($form_id == "auditioneer_audition_node_form"){
 
     $finalized = false;
-    if($form_state['node']->nid){
+    $published = 0;
+    if($form_state['node'] && isset($form_state['node']->nid)){
       $audition = node_load($form_state['node']->nid);
       if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
         $finalized = true;
       }
+      $published = $audition->status;
     }
 
     drupal_add_css(drupal_get_path('module', 'auditioneer') . '/auditioneer.css', array('group' => CSS_DEFAULT, 'type' => 'file'));
@@ -111,11 +120,11 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
     unset($form['field_auditioneer_finalized']); // internal-use field, hide from users
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#value'] = "US"; // XXX why doesn't #default_value work?
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#weight'] = 500;
-    $form['options']['status']['#default_value'] = 0;
+    $form['options']['status']['#default_value'] = $published;
     $form['options']['promote']['#default_value'] = 0;
-    $form['#prefix'] = "<h1>This audition's assignments have been finalized. Only some fields are available for editing.</h1>";
     unset($form['actions']['preview']);
     if($finalized){
+      $form['#prefix'] = "<h1>This audition's assignments have been finalized. Only some fields are available for editing.</h1>";
       foreach (array('field_auditioneer_collect', 'field_auditioneer_deadline', 'field_auditioneer_group_interval', 'field_auditioneer_time_blocks') as $fieldname){
         $form[$fieldname]['#access'] = false;
       }
@@ -149,7 +158,8 @@ function _auditioneer_timeblock_ajax(&$form, $form_state){
 /**
  */
 function auditioneer_form_submit($form, &$form_state){
-  variable_set('menu_rebuild_needed', TRUE);
+//  variable_set('menu_rebuild_needed', TRUE);
+  menu_rebuild();
 }
 
 /**
@@ -164,6 +174,13 @@ function auditioneer_form_submit($form, &$form_state){
 function auditioneer_form_validate($form, &$form_state){
   $count = 0;
 
+  if($form_state['node'] && isset($form_state['node']->nid)){
+    $audition = node_load($form_state['node']->nid);
+    if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+      return;
+    }
+  }
+
   while(array_key_exists($count, $form['field_auditioneer_time_blocks'][LANGUAGE_NONE])){
     $css_id = "#audition_block_timerange_$count";
     if(!isset($form['field_auditioneer_time_blocks'][LANGUAGE_NONE][$count]['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#value'])){
@@ -177,7 +194,7 @@ function auditioneer_form_validate($form, &$form_state){
 
     if(($end_stamp - $start_stamp)/3600 > 12){
       form_set_error($form_elt, "Time blocks cannot span more than 12 hours");
-    } elseif(($end_stamp - $start_stamp) < 900) {
+    } elseif($end_stamp == $start_stamp) {
       form_set_error($form_elt, "Time blocks must be 15 minutes or longer");
     }
     $subcount = 0;

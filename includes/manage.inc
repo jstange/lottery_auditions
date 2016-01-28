@@ -178,7 +178,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   $nid = $args[0];
   $audition = node_load($nid);
   $finalized = false;
-  if($audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'] > 0){
+  if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
     $finalized = true;
   }
 /*
@@ -241,6 +241,8 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       '#type' => 'submit',
       '#name' => 'finalize-'.$nid,
       '#weight' => 500,
+//XXX temp for testing
+#'#disabled' => true,
       '#value' => 'FINALIZE',
       '#prefix' => "<div class='audition_signup_mgmt_finalize'>",
       '#suffix' => "<p>Save all remaining <span class='unsaved'>unsaved</span> slots with their occupants, lock this form, and notify all users of their official status, audition times, etc. Do not press until you're ready for auditioners to be contacted!<p></div>",
@@ -373,8 +375,8 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   $saved_count = count($placements);
   while(array_key_exists($tblock_count, $timeblocks)){
     $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
-    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
-    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
+    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']." ".$realitem['field_auditioneer_timerange']['#items'][0]['timezone_db']);
+    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']." ".$realitem['field_auditioneer_timerange']['#items'][0]['timezone_db']);
     $group = 0;
     $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
     $slot_types = array();
