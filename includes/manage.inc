@@ -225,6 +225,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>";
   }
 
+
   $form['instructions'] = array(
     '#type' => 'item',
     '#prefix' => "<div class='audition_signup_mgmt_instructions'>",
@@ -242,7 +243,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       '#name' => 'finalize-'.$nid,
       '#weight' => 500,
 //XXX temp for testing
-#'#disabled' => true,
+//'#disabled' => true,
       '#value' => 'FINALIZE',
       '#prefix' => "<div class='audition_signup_mgmt_finalize'>",
       '#suffix' => "<p>Save all remaining <span class='unsaved'>unsaved</span> slots with their occupants, lock this form, and notify all users of their official status, audition times, etc. Do not press until you're ready for auditioners to be contacted!<p></div>",
@@ -514,43 +515,45 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     _auditioneer_add_mgmt_slot_buttons($req, "waitlist", $form['slots']['audition_mgmt_unassigned_list']['waitlist'][$wl_count], $finalized, $wl_count);
   }
 
+  if($finalized){
+    $emails = array();
+    foreach ($placements as $req){
+      $emails[] = $req['name']." <".$req['mail'].">";
+    }
+    $form['emails_assigned'] = array(
+      '#type' => 'textarea',
+      '#disabled' => true,
+      '#value' => implode(", ", $emails),
+      '#weight' => 200,
+      '#title' => "Email List: Auditioners with Slots"
+    );
+    $wl_emails = array();
+    foreach ($unplaced as $req){
+      $wl_emails[] = $req['name']." <".$req['mail'].">";
+    }
+    $form['emails_waitlisted'] = array(
+      '#type' => 'textarea',
+      '#disabled' => true,
+      '#value' => implode(", ", $wl_emails),
+      '#weight' => 201,
+      '#title' => "Email List: Waitlisted"
+    );
+    $dq_emails = array();
+    foreach ($disqualified as $req){
+      $dq_emails[] = $req['name']." <".$req['mail'].">";
+    }
+    $form['emails_rejected'] = array(
+      '#type' => 'textarea',
+      '#disabled' => true,
+      '#value' => implode(", ", $dq_emails),
+      '#weight' => 202,
+      '#title' => "Email List: Ineligible"
+    );
+  }
+
   return($form);
 }
 
-
-function theme_auditioneer_components($vars){
-  $element = $vars['element'];
-  drupal_add_tabledrag($element['#id']."-table", 'order', 'sibling', 'item-row-weight');
-
-  $header = array(
-    'auditioner' => t('Auditioner'), 
-    //    'slot_type' => t('Slot Type'), 
-    'weight' => t('Weight'),
-  );
-
-  $rows = array();
-  foreach (element_children($element) as $key) {
-    $row = array();
-    $row['data'] = array();
-
-    foreach ($header as $fieldname => $title) {
-      if(!array_key_exists($fieldname, $element[$key])){
-        continue;
-      }
-      $row['data'][] = drupal_render($element[$key][$fieldname]);
-      if(!$element[$key]['auditioner']['#tree']){
-        //  $row['class'] = array('draggable');
-      }
-    }
-    $rows[] = $row;
-  }
-
-  return theme('table', array(
-    'header' => $header, 
-    'rows' => $rows,
-    'attributes' => array('id' => $element['#id']."-table"),
-  ));
-}
 
 function auditioneer_manage($nid) {
   _auditioneer_display_bits();
