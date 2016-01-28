@@ -243,7 +243,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       '#name' => 'finalize-'.$nid,
       '#weight' => 500,
 //XXX temp for testing
-//'#disabled' => true,
+'#disabled' => true,
       '#value' => 'FINALIZE',
       '#prefix' => "<div class='audition_signup_mgmt_finalize'>",
       '#suffix' => "<p>Save all remaining <span class='unsaved'>unsaved</span> slots with their occupants, lock this form, and notify all users of their official status, audition times, etc. Do not press until you're ready for auditioners to be contacted!<p></div>",

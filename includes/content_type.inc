@@ -157,9 +157,15 @@ function _auditioneer_timeblock_ajax(&$form, $form_state){
 
 /**
  */
-function auditioneer_form_submit($form, &$form_state){
-//  variable_set('menu_rebuild_needed', TRUE);
-  menu_rebuild();
+function auditioneer_node_submit($node, $form, &$form_state){
+  if($node && $node->type == "auditioneer_audition"){
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+function auditioneer_node_delete($node){
+  if($node && $node->type == "auditioneer_audition"){
+    variable_set('menu_rebuild_needed', TRUE);
+  }
 }
 
 /**
