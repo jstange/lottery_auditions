@@ -58,6 +58,14 @@ function auditioneer_admin() {
     '#description' => t("The path to the signup page where all pending auditions will be visible to users (currently <a href='/".variable_get('auditioneer_signup_path')."'>/".variable_get('auditioneer_signup_path')."</a>). <strong>You may need to clear the site cache for changes to this setting to take effect.</strong>"),
     '#required' => TRUE
   );
+  $form['auditioneer_resume_upload_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Resum&eacute;  upload path'),
+    '#size' => 25,
+    '#default_value' => variable_get('auditioneer_resume_upload_path'),
+    '#description' => t("Where to store uploaded headshots/resum&eacute;s, as a Drupal file URI. Recommended value: <strong>private://</strong>. You must first ensure that the Private file system path is correctly configured at <a href='/admin/config/media/file-system'>/admin/config/media/file-system</a>. Uploaded resum&eacute;s will be anonymously accessible if this is set to <strong>public://</strong>."),
+    '#required' => TRUE
+  );
 
   $form['auditioneer_messaging'] = array(
     '#type' => 'fieldset',

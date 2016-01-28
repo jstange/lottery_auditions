@@ -395,13 +395,17 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#type' => 'file',
       '#name' => 'files[resume]',
       '#disabled' => $disabled,
-      '#title' => t('Upload Photo/Resume').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
+      '#title' => t('Upload Photo/Resum&eacute;').' <span class="form-required '.$req_class.'" title="This field is required.">*</span>',
       '#weight' => 93,
       '#upload_validators' => array("file_validate_extensions" => array("pdf doc docx jpg jpeg odt rtf")),
       '#attributes' => array('class' => array('auditioneer_signup_contact_resume'))
     );
     if(!empty($contact_data['resume'])){
-      $form['audition_signup_fieldset']['contact_panel']['contact_resume']['#title'] = t('Photo/Resume already uploaded as <strong>'.preg_replace("/.*?\//", "", $contact_data['resume'])."</strong>.<br />You may upload a replacement if desired.");
+      $upload_append = "";
+      if(!$disabled){
+        $upload_append = "<br />You may upload a replacement if desired.";
+      }
+      $form['audition_signup_fieldset']['contact_panel']['contact_resume']['#title'] = t('Photo/Resum&eacute; already uploaded as <strong>'.preg_replace("/.*?\//", "", $contact_data['resume'])."</strong>$upload_append");
     }
   }
 
@@ -473,7 +477,7 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
   }
 
   if(in_array("Photo/Resume", $req_contact_fields)){
-    $dir = 'public://auditioneer_'.$nid;
+    $dir = variable_get('auditioneer_resume_upload_path').'/auditioneer_'.$nid;
     if(!file_prepare_directory($dir)){
       drupal_mkdir($dir);
     }
@@ -492,7 +496,7 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
         }
       }
       if(empty($contact_data['resume'])){
-        form_set_error("resume", "Photo/Resume field is required for one or more selected time blocks.");
+        form_set_error("resume", "Photo/Resum&eacute; field is required for one or more selected time blocks.");
       }
     }
   }
@@ -531,10 +535,9 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   }
 
   $validators = array();
-  // XXX provide option to use private:// instead
   // XXX This seems not only redundant to _validate, but to get ignored if
   // they're different. Go figure.
-  $dir = 'public://auditioneer_'.$nid;
+  $dir = variable_get('auditioneer_resume_upload_path').'/auditioneer_'.$nid;
   if(!file_prepare_directory($dir)){
     drupal_mkdir($dir);
   }

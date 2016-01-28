@@ -93,6 +93,7 @@ function auditioneer_install() {
   variable_set('auditioneer_timeblock_unchecked', 'LightPink');
 
   variable_set('auditioneer_signup_path', 'audition_signup');
+  variable_set('auditioneer_resume_upload_path', 'public://');
 
   $role = user_role_load_by_name("administrator");
   if($role){
