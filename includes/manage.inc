@@ -185,6 +185,9 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
       'id' => array($id)
     )
   );
+/*
+  XXX wait, this doesn't do anything. Make a nice little popup div from these
+  values though? Don't forget the phone field.
   $slot['uid'] = array(
     '#type' => 'hidden',
     '#name' => 'uid'
@@ -197,25 +200,26 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
     '#type' => 'hidden',
     '#name' => 'mail'
   );
+//    $slot['uid']['#value'] = $req['uid'];
+//    $slot['username']['#value'] = $req['name'];
+//    $slot['mail']['#value'] = $mail;
+*/
 
   if($req){
     $name = $req['name'];
     $mail = $req['mail'];
     if($req['contact_data']){
-      if($req['contact_data']['name']){
+      if(isset($req['contact_data']['name'])){
         $name = $req['contact_data']['name'];
       }
-      if($req['contact_data']['email']){
+      if(isset($req['contact_data']['email'])){
         $mail = $req['contact_data']['email'];
       }
     }
-    if($req['slot_type'] && $is_unassigned){
+    if($req['slot_type'] && $show_slottype){
       $slot_type = "(".$req['slot_type'].")";
     }
     $slot['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$name."</a>$slot_type</div>";
-    $slot['uid']['#value'] = $req['uid'];
-    $slot['username']['#value'] = $req['name'];
-    $slot['mail']['#value'] = $mail;
   } else {
     $slot['#title'] = "<div class='audition_mgmt_table_auditioner_label'>&lt;available&gt;</div>";
     $slot['#attributes']['class'][] = "unassigned";
