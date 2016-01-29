@@ -413,7 +413,7 @@ div.audition_signup_mgmt_instructions {
   width:100%;
   clear:both;
 }
-div.audition_signup_mgmt_instructions > div#edit-instructions,
+div.audition_signup_mgmt_instructions > div.form-item
 div.audition_signup_mgmt_instructions div.audition_signup_mgmt_button_descs {
   display:inline-block;
   margin-bottom:0.5em;
@@ -425,18 +425,13 @@ div.audition_signup_mgmt_instructions div.audition_signup_mgmt_button_descs {
   white-space:normal;
   float:right;
 }
-div.audition_signup_mgmt_instructions > div#edit-instructions {
+div.audition_signup_mgmt_instructions > div.form-item {
   width:100%;
   margin-bottom:0px;
   padding-bottom:0px;
 }
 div.audition_signup_mgmt_instructions > div.audition_signup_mgmt_button_descs div {
   font-size:x-small;
-}
-div.audition_signup_mgmt_instructions > div.form-item {
-  width:45%;
-  white-space:normal;
-  float:left;
 }
 div.audition_signup_mgmt_button_descs img {
   max-width:1em;
