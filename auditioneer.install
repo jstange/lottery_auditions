@@ -1001,8 +1001,8 @@ function _auditioneer_field_instances() {
     'label' => 'Group Interval',
     'required' => 0,
     'settings' => array(
-      'max' => 60,
-      'min' => 15,
+      'max' => 120,
+      'min' => 10,
       'prefix' => '',
       'suffix' => 'minutes',
       'user_register_form' => FALSE,

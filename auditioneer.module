@@ -221,6 +221,11 @@ function auditioneer_admin() {
     '#element_validate' => array('auditioneer_element_validate_css_color'),
     '#required' => TRUE,
   );
+  $form['css_colors_guide'] = array(
+    '#type' => 'item',
+    '#markup' => '<em>Color fields accept any valid CSS color string. See the <a href="http://www.w3schools.com/colors/default.asp" target="_blank">W3 Schools</a> guide on CSS/HTML colors for more information.</em>',
+    '#weight' => 9
+  );
 
   return system_settings_form($form);
 }
