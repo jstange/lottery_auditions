@@ -58,6 +58,14 @@ function auditioneer_admin() {
     '#description' => t("The path to the signup page where all pending auditions will be visible to users (currently <a href='/".variable_get('auditioneer_signup_path')."'>/".variable_get('auditioneer_signup_path')."</a>). <strong>You may need to clear the site cache for changes to this setting to take effect.</strong>"),
     '#required' => TRUE
   );
+  $form['auditioneer_notify_from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Send notification emails from:'),
+    '#size' => 25,
+    '#default_value' => variable_get('auditioneer_notify_from'),
+    '#description' => t("Sets the <strong>From</strong> address for notification emails. Set to an address that will be read by a live person, able to answer questions from auditioners."),
+    '#required' => TRUE
+  );
   $form['auditioneer_resume_upload_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Resum&eacute;  upload path'),

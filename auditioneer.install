@@ -93,6 +93,7 @@ function auditioneer_install() {
   variable_set('auditioneer_timeblock_unchecked', 'LightPink');
 
   variable_set('auditioneer_signup_path', 'audition_signup');
+  variable_set('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
   variable_set('auditioneer_resume_upload_path', 'public://');
 
   $role = user_role_load_by_name("administrator");
@@ -307,6 +308,36 @@ function _auditioneer_field_bases() {
     ),
     'translatable' => 0,
     'type' => 'datetime',
+  );
+
+  // Exported field_base: 'field_auditioneer_email_instruct'
+  $field_bases['field_auditioneer_email_instruct'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_auditioneer_email_instruct',
+    'field_permissions' => array(
+      'type' => 0,
+    ),
+    'foreign keys' => array(
+      'format' => array(
+        'columns' => array(
+          'format' => 'format',
+        ),
+        'table' => 'filter_format',
+      ),
+    ),
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'text_long',
   );
 
   // Exported field_base: 'field_auditioneer_finalized'
@@ -899,6 +930,58 @@ function _auditioneer_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_email_instruct'
+  $field_instances['node-auditioneer_audition-field_auditioneer_email_instruct'] = array(
+    'bundle' => 'auditioneer_audition',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => 'Anything auditioners need to know. The content of this field will be included in notification emails. If not specified, the content of the <strong>Instructions (Signup Form)</strong> field will be used instead.',
+    'display' => array(
+      'auditioneer_audition_signup_form' => array(
+        'label' => 'inline',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 5,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 5,
+      ),
+      'scs' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_auditioneer_email_instruct',
+    'label' => 'Instructions (Email Notifications)',
+    'required' => 0,
+    'settings' => array(
+      'text_processing' => 1,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'text',
+      'settings' => array(
+        'rows' => 5,
+      ),
+      'type' => 'text_textarea',
+      'weight' => 8,
+    ),
+  );
+
   // Exported field_instance: 'node-auditioneer_audition-field_auditioneer_finalized'
   $field_instances['node-auditioneer_audition-field_auditioneer_finalized'] = array(
     'bundle' => 'auditioneer_audition',
@@ -921,7 +1004,7 @@ function _auditioneer_field_instances() {
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
-        'weight' => 5,
+        'weight' => 6,
       ),
       'scs' => array(
         'label' => 'above',
@@ -950,7 +1033,7 @@ function _auditioneer_field_instances() {
         'display_label' => 0,
       ),
       'type' => 'options_onoff',
-      'weight' => 10,
+      'weight' => 11,
     ),
   );
 
@@ -981,7 +1064,7 @@ function _auditioneer_field_instances() {
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
-        'weight' => 6,
+        'weight' => 7,
       ),
       'scs' => array(
         'label' => 'above',
@@ -1001,8 +1084,8 @@ function _auditioneer_field_instances() {
     'label' => 'Group Interval',
     'required' => 0,
     'settings' => array(
-      'max' => 120,
-      'min' => 10,
+      'max' => 60,
+      'min' => 15,
       'prefix' => '',
       'suffix' => 'minutes',
       'user_register_form' => FALSE,
@@ -1012,7 +1095,7 @@ function _auditioneer_field_instances() {
       'module' => 'number',
       'settings' => array(),
       'type' => 'number',
-      'weight' => 8,
+      'weight' => 9,
     ),
   );
 
@@ -1052,7 +1135,7 @@ function _auditioneer_field_instances() {
     ),
     'entity_type' => 'node',
     'field_name' => 'field_auditioneer_instructions',
-    'label' => 'Special Instructions',
+    'label' => 'Instructions (Signup Form)',
     'required' => 0,
     'settings' => array(
       'text_processing' => 1,
@@ -1125,7 +1208,7 @@ function _auditioneer_field_instances() {
       'module' => 'addressfield',
       'settings' => array(
         'available_countries' => array(),
-        'default_country' => 'US',
+        'default_country' => '',
         'format_handlers' => array(
           'address' => 'address',
           'address-hide-country' => 'address-hide-country',
@@ -1197,7 +1280,7 @@ January 2nd, 1:00 PM to 5:00PM - 40 auditioners',
       'module' => 'field_collection',
       'settings' => array(),
       'type' => 'field_collection_embed',
-      'weight' => 9,
+      'weight' => 10,
     ),
   );
 
@@ -1211,6 +1294,7 @@ January 2nd, 9:00 AM to 12:00PM - 30 auditioners;
 January 2nd, 1:00 PM to 5:00PM - 40 auditioners');
   t('Alternate Name');
   t('Anything auditioners need to know, e.g. "buzz in at side door" or "40 printed headshots and resumes are required."');
+  t('Anything auditioners need to know. The content of this field will be included in notification emails. If not specified, the content of the <strong>Instructions (Signup Form)</strong> field will be used instead.');
   t('Check to add (required) contact fields for users signing up for auditions in this time block. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>');
   t('Check to add (required) contact fields for users signing up for auditions. These requirements can also be added on a per-timeblock basis, if, for example, you only want to require headshots for musical auditions. <strong>Name, Email, and Photo/Resume will always be collected from anonymous (public) signups.</strong>');
   t('Date/time for signups to close, after which we can begin the process of assigning slots and notifying auditioners.');
@@ -1218,12 +1302,13 @@ January 2nd, 1:00 PM to 5:00PM - 40 auditioners');
   t('Finalized');
   t('Group Interval');
   t('How long should each audition group be? Time blocks specified below will be subdivided into groups this size when audition slots are allocated. If left unspecified, time blocks will not be subdivided.');
+  t('Instructions (Email Notifications)');
+  t('Instructions (Signup Form)');
   t('Location');
   t('Number of Slots');
   t('Required Contact Fields');
   t('Restrict Audition Type');
   t('Signup Deadline');
-  t('Special Instructions');
   t('The maximum number of auditioners that can be allocated into this time block. This will <strong>not</strong> be displayed to users when they\'re signing up.');
   t('This shouldn\'t be visible! Used internally to flag an audition\'s assignments as final.');
   t('Time Blocks');

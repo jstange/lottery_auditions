@@ -203,7 +203,7 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
 //    $slot['uid']['#value'] = $req['uid'];
 //    $slot['username']['#value'] = $req['name'];
 //    $slot['mail']['#value'] = $mail;
-*/
+ */
 
   if($req){
     $name = $req['name'];
@@ -298,7 +298,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       '#type' => 'submit',
       '#name' => 'finalize-'.$nid,
       '#weight' => 500,
-//XXX temp for testing
+      //XXX temp for testing
 //      '#disabled' => true,
       '#value' => 'FINALIZE',
       '#prefix' => "<div class='audition_signup_mgmt_finalize'>",
@@ -558,6 +558,9 @@ function auditioneer_manage($nid) {
   return(drupal_get_form('audition_mgmt_'.$nid, $nid, $audition));
 }
 
+/*
+ * Do the math to break Time Blocks into groups based on Group Interval.
+ */
 function _auditioneer_list_groups($audition){
 
   $interval_s = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value']*60;
@@ -566,8 +569,8 @@ function _auditioneer_list_groups($audition){
   $groups = array();
   while(array_key_exists($tblock_count, $timeblocks)){
     $realitem = array_pop($timeblocks[$tblock_count]['entity']['field_collection_item']);
-    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']);
-    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']);
+    $start = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value']." ".$realitem['field_auditioneer_timerange']['#items'][0]['timezone_db']);
+    $end = strtotime($realitem['field_auditioneer_timerange']['#items'][0]['value2']." ".$realitem['field_auditioneer_timerange']['#items'][0]['timezone_db']);
     $group = 0;
     $block_slots = $realitem['field_auditioneer_block_slots']['#items'][0]['value'];
     $slot_types = array();
@@ -599,6 +602,10 @@ function auditioneer_audition_mgmt_validate_callback($form, &$form_state){
   $groups = _auditioneer_list_groups($audition);
   return $form;
 }
+
+/*
+ * Regenerate the whole form. Handy for AJAX commands to invoke.
+ */
 function _auditioneer_new_form($nid, $form_state){
   $new_state = array();
   $new_state['build_info'] = $form_state['build_info'];
@@ -608,6 +615,10 @@ function _auditioneer_new_form($nid, $form_state){
   return drupal_rebuild_form('audition_mgmt_'.$nid, $new_state);
 }
 
+/*
+ * Save every occupied slot, used by the button that does that on purpose as
+ * well as by finalization.
+ */
 function _auditioneer_save_all_slots($groups, $form_state){
   $slot_index = 1;
   $saved = 0;
@@ -634,11 +645,106 @@ function _auditioneer_save_all_slots($groups, $form_state){
   drupal_set_message("Saved $saved slots (".count($groups)." groups).");
 }
 
+
+/**
+ * Implements hook_mail()
+ */
+function auditioneer_mail($key, &$message, $params){
+  $data['timeslot'] = $params[0];
+  $data['audition'] = $params[1];
+  if($params[2] != null){
+    $data['slottype'] = $params[2];
+  }
+  $options['language'] = $message['language'];
+  user_mail_tokens($variables, $data, $options);
+  $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+  switch($key) {
+  case 'placement':
+    // If the recipient can receive such notices by instant-message, do
+    // not send by email.
+    $langcode = $message['language']->language;
+    $message['subject'] = t('Audition slot for '.$params[1]->title, array(), array('langcode' => $langcode));
+    $message['body'][] = t("<p>Your audition time: <strong>".$params[0]."</strong></p>\n", array(), array('langcode' => $langcode));
+    $location = drupal_render(field_view_field('node', $params[1], 'field_auditioneer_location', 'auditioneer_audition_signup_form'));
+    $message['body'][] = t("<p>$location</p>\n", array(), array('langcode' => $langcode));
+
+//    $instructions = preg_replace("/\n/", "<br/>", $params[1]->field_auditioneer_email_instruct[LANGUAGE_NONE][0]['value']);
+    $instructions = drupal_render(field_view_field('node', $params[1], 'field_auditioneer_email_instruct', 'auditioneer_audition_signup_form'));
+    $message['body'][] = t($instructions, array(), array('langcode' => $langcode));
+    break;
+  }
+}
+
+/**
+ * Send mail to people who got slots, who are waitlisted, etc
+ */
+function _auditioneer_notify_users($audition){
+  $groups = _auditioneer_list_groups($audition);
+  $slot_map = array();
+  $slot_index = 1;
+  foreach ($groups as $group){
+    list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
+    $group_start_dt = new DateTime();
+    $group_start_dt->setTimestamp($start);
+    $group_end_dt = new DateTime();
+    $group_end_dt->setTimestamp($end);
+    for($i=0; $i < $slots_per_group; $i++){
+      $slot_map[$slot_index] = $group_start_dt->format("l, F jS, g:ia")." - ".$group_end_dt->format("g:ia");
+      $slot_index++;
+    }
+  }
+
+  $query = db_select('auditioneer_signups', 's');
+  $query->join('users', 'u', 's.uid = u.uid');
+  $result = $query
+    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
+    ->fields('u', array('name', 'mail'))
+    ->condition('nid', $audition->nid)
+    ->execute();
+
+  $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
+
+  while($req = $result->fetchAssoc()){
+    $name = $req['name'];
+    $mail = $req['mail'];
+    $req['availability'] = unserialize($req['availability']);
+    $req['contact_data'] = unserialize($req['contact_data']);
+    $account = user_load($req['uid']);
+    if($req['contact_data']){
+      if(isset($req['contact_data']['name'])){
+        $name = $req['contact_data']['name'];
+      }
+      if(isset($req['contact_data']['email'])){
+        $mail = $req['contact_data']['email'];
+      }
+    }
+    if($req['placement'] != null && $req['placement'] > 0){
+      // received a slot
+      $params = array($slot_map[$req['placement']], $audition, $slot_type);
+dpm($audition);
+      $message = drupal_mail("auditioneer", "placement", "$name <$mail>", user_preferred_language($account), $params, $from, true);
+      dpm($message);
+    } elseif($req['placement'] != null && $req['placement'] < 0){
+      // disqualified
+
+    } else {
+      // waitlisted
+
+    }
+  }
+
+
+}
+
+/**
+ * All actions and buttons on the management form call this guy.
+ */
 function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $nid = $form_state['values']['audition_id'];
   $audition = node_load($form_state['values']['audition_id']);
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
+//  _auditioneer_notify_users($audition);
   switch ($form_state['triggering_element']['#name']) {
   case "saveinterval-$nid":
     $newinterval = $form_state['input']['interval'];
@@ -656,6 +762,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
     $audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] = 1;
     field_attach_update('node', $audition);
     entity_get_controller('node')->resetCache(array($audition->nid));
+    _auditioneer_notify_users($audition);
     break;
   case "save-$nid":
     _auditioneer_save_all_slots($groups, $form_state);
