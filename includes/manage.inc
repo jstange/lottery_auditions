@@ -80,7 +80,15 @@ function _auditioneer_signup_mgmt_empty_slot($slot_index, $form_state){
 }
 
 function _auditioneer_sort_signups($a, $b){
-  return ($a['name'] < $b['name']) ? -1 : 1;
+  $sort_a = preg_replace("/.*? /", "", strtolower($a['name']));
+  $sort_b = preg_replace("/.*? /", "", strtolower($b['name']));
+  if(array_key_exists("realname", $a)){
+    $sort_a = preg_replace("/.*? /", "", strtolower($a['realname']));
+  }
+  if(array_key_exists("realname", $b)){
+    $sort_b = preg_replace("/.*? /", "", strtolower($b['realname']));
+  }
+  return (strtolower($sort_a) < strtolower($sort_b)) ? -1 : 1;
 }
 
 function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $slot_num = ""){
@@ -265,7 +273,6 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       $unplaced[] = $req;
     }
   }
-  uasort($disqualified, '_auditioneer_sort_signups');// do waitlist later
 
   $form['#prefix'] = "<div id='audition_signup_mgmt_$nid' class='audition_signup_mgmt_wholeform'><h2>".t("$audition->title signups")."</h2>";
   $form['#suffix'] = "</div>";
@@ -378,6 +385,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     '#title' => t("Ineligible (".count($disqualified).")"),
     '#title_display' => "before"
   );
+  usort($disqualified, '_auditioneer_sort_signups');
   foreach ($disqualified as $dq_count => $req){
     $classes = array('audition_mgmt_reject_entry', 'reject');
     $id = 'audition_mgmt_reject_entry_'.$nid."_".$dq_count;
@@ -482,7 +490,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     '#title' => t("Waitlist ($wl_count)"),
     '#title_display' => "before"
   );
-  uasort($unplaced, '_auditioneer_sort_signups');
+  usort($unplaced, '_auditioneer_sort_signups');
   foreach ($unplaced as $wl_count => $req){
     if(in_array($req, $tentative)){
       continue;
@@ -788,6 +796,7 @@ function _auditioneer_printable($audition){
   }
 
   if(count($waitlisted) > 0){
+    usort($waitlisted, '_auditioneer_sort_signups');
     $output .= "<h2>Waitlist</h2>";
     foreach ($waitlisted as $req){
       $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
@@ -799,6 +808,7 @@ function _auditioneer_printable($audition){
   }
 
   if(count($ineligible) > 0){
+    usort($ineligible, '_auditioneer_sort_signups');
     $output .= "<h2>Ineligible</h2>";
     foreach ($ineligible as $req){
       $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
