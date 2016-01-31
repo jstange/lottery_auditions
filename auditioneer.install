@@ -938,7 +938,7 @@ function _auditioneer_field_instances() {
     'description' => 'Anything auditioners need to know. The content of this field will be included in notification emails. If not specified, the content of the <strong>Instructions (Signup Form)</strong> field will be used instead.',
     'display' => array(
       'auditioneer_audition_signup_form' => array(
-        'label' => 'inline',
+        'label' => 'hidden',
         'module' => 'text',
         'settings' => array(),
         'type' => 'text_default',

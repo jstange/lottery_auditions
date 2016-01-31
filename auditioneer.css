@@ -524,3 +524,12 @@ div.audition_signup_mgmt_finalize p {
   margin-top:0.5em;
   margin-bottom:0px;
 }
+
+a.auditioneer_printlink {
+  font-size:medium;
+  float:right;
+}
+a.auditioneer_printlink img {
+  max-height:1.1em;
+  max-width:1.1em;
+}

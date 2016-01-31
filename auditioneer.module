@@ -264,9 +264,9 @@ function auditioneer_menu() {
     }
     $items['admin/config/people/auditions/'.$nid] = array(
       'title' => "Audition: ".$audition->title,
-      'description' => drupal_render(field_view_field('node', $audition, 'field_auditioneer_time_blocks')),
+      'description' => drupal_render(field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form')),
       'page callback' => 'auditioneer_manage',
-      'page arguments' => array(4),
+      'page arguments' => array(4, 5),
       'access callback' => 'user_access',
       'access arguments' => array('administer auditions'),
       'type' => MENU_NORMAL_ITEM

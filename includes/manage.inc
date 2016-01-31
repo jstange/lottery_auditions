@@ -185,13 +185,15 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
       'id' => array($id)
     )
   );
+  if($slot_index){
+    $slot['uid'] = array(
+      '#type' => 'hidden',
+      '#name' => 'uid'.$slot_index
+    );
+  }
 /*
   XXX wait, this doesn't do anything. Make a nice little popup div from these
   values though? Don't forget the phone field.
-  $slot['uid'] = array(
-    '#type' => 'hidden',
-    '#name' => 'uid'
-  );
   $slot['username'] = array(
     '#type' => 'hidden',
     '#name' => 'username'
@@ -200,12 +202,12 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
     '#type' => 'hidden',
     '#name' => 'mail'
   );
-//    $slot['uid']['#value'] = $req['uid'];
 //    $slot['username']['#value'] = $req['name'];
 //    $slot['mail']['#value'] = $mail;
  */
 
   if($req){
+    $slot['uid']['#value'] = $req['uid'];
     $name = $req['name'];
     $mail = $req['mail'];
     if($req['contact_data']){
@@ -217,7 +219,7 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
       }
     }
     if($req['slot_type'] && $show_slottype){
-      $slot_type = "(".$req['slot_type'].")";
+      $slot_type = " (".$req['slot_type'].")";
     }
     $slot['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$name."</a>$slot_type</div>";
   } else {
@@ -352,7 +354,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       '#submit' => array('auditioneer_audition_mgmt_submit_callback')
     );
   } else {
-    $form['instructions']['bigbuttons']['#markup'] = "<h2>Assignments have been finalized and all users notified.</h2>";
+    $form['instructions']['bigbuttons']['#markup'] = "<h2>Assignments have been finalized and all users notified.</h2><p><a href='/admin/config/people/auditions/$nid/printable' class='auditioneer_printlink'><img src='/".drupal_get_path('module', 'auditioneer')."/images/printer.png' alt='Print'> Printable View</a>";
   }
 
 
@@ -530,34 +532,6 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   return($form);
 }
 
-
-function auditioneer_manage($nid) {
-  _auditioneer_display_bits();
-  $audition = node_load($nid);
-  $output = array();
-
-  // Skip auditions that have ended, obviously
-  list($start, $end) = _auditioneer_get_times($audition);
-  if($end < time()){
-    $foo = new DateTime();
-    $foo->setTimestamp($end);
-    $output['#markup'] = $foo->format('l F jS g:ia')."<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
-    return $output;
-  }
-
-  // If we have an audition that's not past the signup deadline yet, make a
-  // note of it but don't provide the full form.
-  $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline'));
-  $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline');
-  $deadline_time = strtotime($deadline_str['#items'][0]['value']);
-  if(time() < $deadline_time){
-    $output['#markup'] = "<h1>SIGNUPS HAVE NOT YET CLOSED</h1>".drupal_render(node_view($audition, "full"));
-    return $output;
-  }
-
-  return(drupal_get_form('audition_mgmt_'.$nid, $nid, $audition));
-}
-
 /*
  * Do the math to break Time Blocks into groups based on Group Interval.
  */
@@ -622,8 +596,9 @@ function _auditioneer_new_form($nid, $form_state){
 function _auditioneer_save_all_slots($groups, $form_state){
   $slot_index = 1;
   $saved = 0;
+
   foreach ($groups as $group){
-    list($start, $end, $slots) = $group;
+    list($start, $end, $slots, $slot_types, $timeblock) = $group;
     for($i=0; $i < $slots; $i++){
       if(!empty($form_state['values'][$start][$slot_index]['uid'])){
         $result = db_update('auditioneer_signups')
@@ -650,35 +625,36 @@ function _auditioneer_save_all_slots($groups, $form_state){
  * Implements hook_mail()
  */
 function auditioneer_mail($key, &$message, $params){
-  $data['timeslot'] = $params[0];
-  $data['audition'] = $params[1];
-  if($params[2] != null){
-    $data['slottype'] = $params[2];
-  }
+  //  $data['timeslot'] = $params[0];
+  //  $data['audition'] = $params[1];
+  //  if($params[2] != null){
+  //    $data['slottype'] = $params[2];
+  //  }
+  //  user_mail_tokens($variables, $data, $options);
   $options['language'] = $message['language'];
-  user_mail_tokens($variables, $data, $options);
   $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+  $message['headers']['MIME-Version'] = '1.0';
+  $message['headers']['Content-Transfer-Encoding'] = '8bit';
   switch($key) {
   case 'placement':
     // If the recipient can receive such notices by instant-message, do
     // not send by email.
     $langcode = $message['language']->language;
-    $message['subject'] = t('Audition slot for '.$params[1]->title, array(), array('langcode' => $langcode));
+    $message['subject'] = mime_header_encode(t('Audition slot for '.$params[1]->title, array(), array('langcode' => $langcode)));
     $message['body'][] = t("<p>Your audition time: <strong>".$params[0]."</strong></p>\n", array(), array('langcode' => $langcode));
     $location = drupal_render(field_view_field('node', $params[1], 'field_auditioneer_location', 'auditioneer_audition_signup_form'));
     $message['body'][] = t("<p>$location</p>\n", array(), array('langcode' => $langcode));
 
-//    $instructions = preg_replace("/\n/", "<br/>", $params[1]->field_auditioneer_email_instruct[LANGUAGE_NONE][0]['value']);
-    $instructions = drupal_render(field_view_field('node', $params[1], 'field_auditioneer_email_instruct', 'auditioneer_audition_signup_form'));
+    $instructions = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $params[1], 'field_auditioneer_email_instruct', 'auditioneer_audition_signup_form')));
     $message['body'][] = t($instructions, array(), array('langcode' => $langcode));
     break;
   }
 }
 
-/**
- * Send mail to people who got slots, who are waitlisted, etc
+/*
+ * Generate a simple mapping of slot number to audition time
  */
-function _auditioneer_notify_users($audition){
+function _auditioneer_get_slot_map($audition){
   $groups = _auditioneer_list_groups($audition);
   $slot_map = array();
   $slot_index = 1;
@@ -693,6 +669,14 @@ function _auditioneer_notify_users($audition){
       $slot_index++;
     }
   }
+  return $slot_map;
+}
+
+/**
+ * Send mail to people who got slots, who are waitlisted, etc
+ */
+function _auditioneer_notify_users($audition){
+  $slot_map = _auditioneer_get_slot_map($audition);
 
   $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
@@ -720,10 +704,8 @@ function _auditioneer_notify_users($audition){
     }
     if($req['placement'] != null && $req['placement'] > 0){
       // received a slot
-      $params = array($slot_map[$req['placement']], $audition, $slot_type);
-dpm($audition);
+      $params = array($slot_map[$req['placement']], $audition, $req['slot_type']);
       $message = drupal_mail("auditioneer", "placement", "$name <$mail>", user_preferred_language($account), $params, $from, true);
-      dpm($message);
     } elseif($req['placement'] != null && $req['placement'] < 0){
       // disqualified
 
@@ -733,7 +715,101 @@ dpm($audition);
     }
   }
 
+}
 
+
+/**
+ * Display a printer-friendly version of our signup list. Intended for
+ * auditions that are already finalized.
+ */
+function _auditioneer_printable($audition){
+  $output = "";
+
+  $query = db_select('auditioneer_signups', 's');
+  $query->join('users', 'u', 's.uid = u.uid');
+  $result = $query
+    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
+    ->fields('u', array('name', 'mail'))
+    ->condition('nid', $audition->nid)
+    ->execute();
+
+  $groups_printed = array();
+
+  $placed = $waitlisted = $ineligible = array();
+  while($req = $result->fetchAssoc()){
+    $req['realname'] = $req['name'];
+    $req['realmail'] = $req['mail'];
+    $req['realphone'] = "";
+    $req['availability'] = unserialize($req['availability']);
+    $req['contact_data'] = unserialize($req['contact_data']);
+    $account = user_load($req['uid']);
+    if($req['contact_data']){
+      if(isset($req['contact_data']['name'])){
+        $req['realname'] = $req['contact_data']['name'];
+      }
+      if(isset($req['contact_data']['email'])){
+        $req['realmail'] = $req['contact_data']['email'];
+      }
+      if(isset($req['contact_data']['phone'])){
+        $req['realphone'] = $req['contact_data']['phone'];
+      }
+    }
+    if($req['placement'] != null && $req['placement'] > 0){
+      $placed[$req['placement']] = $req;
+    } elseif($req['placement'] != null && $req['placement'] < 0){
+      $ineligible[] = $req;
+    } else {
+      $waitlisted[] = $req;
+    }
+  }
+
+  $groups = _auditioneer_list_groups($audition);
+  $slot_map = array();
+  $slot_index = 1;
+  $output .= "<h2>Auditioners with Assigned Slots</h2>";
+  foreach ($groups as $group){
+    list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
+    $group_start_dt = new DateTime();
+    $group_start_dt->setTimestamp($start);
+    $group_end_dt = new DateTime();
+    $group_end_dt->setTimestamp($end);
+    $output .= "<h3>".$group_start_dt->format("l, F jS, g:ia")." - ".$group_end_dt->format("g:ia")."</h3>";
+    for($i=0; $i < $slots_per_group; $i++){
+      $output .= "$slot_index. ";
+      if(array_key_exists($slot_index, $placed)){
+        $output .= "<strong>".$placed[$slot_index]['realname']."</strong> &lt;".$placed[$slot_index]['realmail']."&gt;";
+        if(!empty($placed[$slot_index]['realphone'])){
+          $output .= " - <em>".$placed[$slot_index]['realphone']."</em>";
+        }
+      }
+      $output .= "<br />";
+      $slot_index++;
+    }
+  }
+
+  if(count($waitlisted) > 0){
+    $output .= "<h2>Waitlist</h2>";
+    foreach ($waitlisted as $req){
+      $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
+      if(!empty($req['realphone'])){
+        $output .= " - <em>".$req['realphone']."</em>";
+      }
+      $output .= "<br />";
+    }
+  }
+
+  if(count($ineligible) > 0){
+    $output .= "<h2>Ineligible</h2>";
+    foreach ($ineligible as $req){
+      $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
+      if(!empty($req['realphone'])){
+        $output .= " - <em>".$req['realphone']."</em>";
+      }
+      $output .= "<br />";
+    }
+  }
+
+  return($output);
 }
 
 /**
@@ -744,7 +820,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $audition = node_load($form_state['values']['audition_id']);
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
-//  _auditioneer_notify_users($audition);
+
   switch ($form_state['triggering_element']['#name']) {
   case "saveinterval-$nid":
     $newinterval = $form_state['input']['interval'];
@@ -844,3 +920,38 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   }
   return(_auditioneer_new_form($nid, $form_state));
 }
+
+/**
+ * Main management page callback. Invokes other stuff above.
+ */
+function auditioneer_manage($nid, $mode = null) {
+  _auditioneer_display_bits();
+  $audition = node_load($nid);
+  $output = array();
+
+  if($mode == "printable"){
+    return _auditioneer_printable($audition);
+  }
+
+  // Skip auditions that have ended, obviously
+  list($start, $end) = _auditioneer_get_times($audition);
+  if($end < time()){
+    $foo = new DateTime();
+    $foo->setTimestamp($end);
+    $output['#markup'] = $foo->format('l F jS g:ia')."<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
+    return $output;
+  }
+
+  // If we have an audition that's not past the signup deadline yet, make a
+  // note of it but don't provide the full form.
+  $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline'));
+  $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline');
+  $deadline_time = strtotime($deadline_str['#items'][0]['value']);
+  if(time() < $deadline_time){
+    $output['#markup'] = "<h1>SIGNUPS HAVE NOT YET CLOSED</h1>".drupal_render(node_view($audition, "full"));
+    return $output;
+  }
+
+  return(drupal_get_form('audition_mgmt_'.$nid, $nid, $audition));
+}
+

@@ -1,12 +1,12 @@
 name = Auditioneer
-description = Schedule audition signups, with random selection and waitlisting.
+description = Schedule auditions and automate actor signup, with random selection and waitlisting.
 core = 7.x
 files[] = includes/signup.inc
 files[] = includes/content_type.inc
 files[] = includes/manage.inc
 dependencies[] = field_collection
 dependencies[] = field_permissions
-dependencies[] = views
+dependencies[] = mimemail
 dependencies[] = addressfield
 
 configure = admin/config/people/auditioneer
