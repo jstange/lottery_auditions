@@ -77,9 +77,9 @@ if ($end == null || $cur_end > $end){
 ?>
 <?php
 endforeach;
-$start_dt = new DateTime();
+$start_dt = new AuditioneerDateTime();
 $start_dt->setTimestamp($start);
-$end_dt = new DateTime();
+$end_dt = new AuditioneerDateTime();
 $end_dt->setTimestamp($end);
 print $start_dt->format("l F jS, Y")." - ".$end_dt->format("l F jS, Y");
 ?>

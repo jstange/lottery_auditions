@@ -434,9 +434,9 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
       if($group_end > $end){
         $group_end = $end;
       }
-      $group_start_dt = new DateTime();
+      $group_start_dt = new AuditioneerDateTime();
       $group_start_dt->setTimestamp($group_start);
-      $group_end_dt = new DateTime();
+      $group_end_dt = new AuditioneerDateTime();
       $group_end_dt->setTimestamp($group_end);
 
       $form['slots']['audition_mgmt_table'][$group_start] = array(
@@ -673,9 +673,9 @@ function _auditioneer_get_slot_map($audition){
   $slot_index = 1;
   foreach ($groups as $group){
     list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
-    $group_start_dt = new DateTime();
+    $group_start_dt = new AuditioneerDateTime();
     $group_start_dt->setTimestamp($start);
-    $group_end_dt = new DateTime();
+    $group_end_dt = new AuditioneerDateTime();
     $group_end_dt->setTimestamp($end);
     for($i=0; $i < $slots_per_group; $i++){
       $slot_map[$slot_index] = $group_start_dt->format("l, F jS, g:ia")." - ".$group_end_dt->format("g:ia");
@@ -811,9 +811,9 @@ function _auditioneer_printable($audition){
   $output .= "<h2>Auditioners with Assigned Slots</h2>";
   foreach ($groups as $group){
     list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
-    $group_start_dt = new DateTime();
+    $group_start_dt = new AuditioneerDateTime();
     $group_start_dt->setTimestamp($start);
-    $group_end_dt = new DateTime();
+    $group_end_dt = new AuditioneerDateTime();
     $group_end_dt->setTimestamp($end);
     $output .= "<h3>".$group_start_dt->format("l, F jS, g:ia")." - ".$group_end_dt->format("g:ia")."</h3>";
     for($i=0; $i < $slots_per_group; $i++){
@@ -982,7 +982,7 @@ function auditioneer_manage($nid, $mode = null) {
   // Skip auditions that have ended, obviously
   list($start, $end) = _auditioneer_get_times($audition);
   if($end < time()){
-    $foo = new DateTime();
+    $foo = new AuditioneerDateTime();
     $foo->setTimestamp($end);
     $output['#markup'] = $foo->format('l F jS g:ia')."<h1>THIS AUDITION HAS ENDED</h1>".drupal_render(node_view($audition, "full"));
     return $output;

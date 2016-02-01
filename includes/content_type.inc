@@ -9,7 +9,7 @@ function _auditioneer_get_datetime_from_datefield_array($datefield){
   if(array_key_exists('offset', $datefield)){
     $stamp_1 += $datefield['offset'];
   }
-  $date1 = new DateTime();
+  $date1 = new AuditioneerDateTime();
   $date1->setTimeStamp($stamp_1);
 
   $date_2 = null;
@@ -18,7 +18,7 @@ function _auditioneer_get_datetime_from_datefield_array($datefield){
     if(array_key_exists('offset2', $datefield)){
       $stamp_2 += $datefield['offset2'];
     }
-    $date2 = new DateTime();
+    $date2 = new AuditioneerDateTime();
     $date2->setTimeStamp($stamp_2);
   }
   return array($date1, $date2);
@@ -34,7 +34,7 @@ function _auditioneer_get_datetime_from_datefield_array($datefield){
  * the first one up against the wall when the revolution comes.
  */
 function _auditioneer_datefield_sync_dates(&$datefield){
-  $date1 = new DateTime();
+  $date1 = new AuditioneerDateTime();
   if($datefield['value'] instanceof DateTime){
     $date1 = $datefield['value'];
   } elseif(is_array($datefield['value'])){
@@ -48,7 +48,7 @@ function _auditioneer_datefield_sync_dates(&$datefield){
   } elseif(is_array($datefield['value2'])){
     $datefield['value2']['date'] = $date1->format('Y-m-d');
   } else {
-    $date2 = new DateTime();
+    $date2 = new AuditioneerDateTime();
     $date2->setTimeStamp(strtotime($datefield['value2']));
     $datefield['value2'] = $date1->format('Y-m-d')." ".$date2->format('H:i:s');
   }
