@@ -92,6 +92,10 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $nid = $args[0];
   $audition = $args[1];
   $disabled = false;
+  $finalized = false;
+  if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
+    $finalized = true;
+  }
   $ext_requests = db_select('auditioneer_signups', 's')
     ->fields('s', array('availability', 'contact_data', 'placement', 'slot_type'))
     ->condition('nid', $nid)
@@ -124,7 +128,10 @@ function _auditioneer_signup_form($form, &$form_state, $args){
 
   $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
   $address = "<div class='auditioneer_audition_address'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_location', 'auditioneer_audition_signup_form'))."</div>";
-  $instructions = "<div class='auditioneer_audition_instructions'>".drupal_render(field_view_field('node', $audition, 'field_auditioneer_instructions', 'auditioneer_audition_signup_form'))."</div>";
+  $instructions = "";
+  if(!$finalized){
+    $instructions = "<div class='auditioneer_audition_instructions'>".preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioneer_instructions', 'auditioneer_audition_signup_form')))."</div>";
+  }
   $deadline = drupal_render(field_view_field('node', $audition, 'field_auditioneer_deadline', 'auditioneer_audition_signup_form'));
   $deadline_str = field_view_field('node', $audition, 'field_auditioneer_deadline', 'auditioneer_audition_signup_form');
   $deadline_time = strtotime($deadline_str['#items'][0]['value']);
@@ -163,7 +170,23 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $form['#validate'] = array('auditioneer_audition_signup_validate_callback');
 //  list($start, $end) = _auditioneer_get_times($audition);
   $banner = "";
-  if(!$disabled){
+  if($finalized && count($ext_requests) > 0 && is_array($ext_requests)){
+    $msg = "";
+    $info = "";
+    if($ext_requests['placement'] > 0){
+      $slot_map = _auditioneer_get_slot_map($audition);
+      $msg = "Your audition: ".$slot_map[$ext_requests['placement']];
+      $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_granted_info', 'auditioneer_audition_signup_form'));
+    } elseif($ext_requests['placement'] == 0){
+      $msg = "You have been placed on the Waitlist for this audition.";
+      $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_waitlist_info', 'auditioneer_audition_signup_form'));
+    } elseif($ext_requests['placement'] < 0){
+      $msg = "You are currently not eligible for this audition.";
+      $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_ineligible_info', 'auditioneer_audition_signup_form'));
+    }
+    $info = preg_replace("/\n/", "<br />", $info);
+    $form['audition_signup_fieldset']['info_panel']['#suffix'] .= "<div class='auditioneer_audition_infoblock'><div class='auditioneer_audition_deadline'></div><div class='auditioneer_audition_detailed_message'><p><strong>$msg</strong></p>$info</div></div>";
+  } elseif(!$disabled){
     $form['audition_signup_fieldset']['submit'] = array(
       '#type' => 'submit',
       '#weight' => 99,
@@ -190,6 +213,9 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $current_day = "";
   $aud_type_opts = array();
   $have_generic_slots = false;
+  if($finalized){
+    return($form);
+  }
 
   // Loop through once to tally up all the types of specialized audition slots
   // in play.
@@ -588,23 +614,6 @@ function auditioneer_field_widget_form_alter(&$element, &$form_state, $context) 
     $element['field_auditioneer_timerange'][LANGUAGE_NONE][0]['#element_validate'] = $new_tr_validate;
   }
 }
-
-/*
-function function auditioneer_views_default_views(){
-}
- */
-
-/*
-function auditioneer_views_pre_render(&$view){
-  dpm("pre_render");
-  dpm($view);
-}
-
-function auditioneer_views_post_render(&$view){
-  dpm("post_render");
-  dpm($view);
-}
- */
 
 function auditioneer_page_alter(&$page){
   _auditioneer_display_bits();

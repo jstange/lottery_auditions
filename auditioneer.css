@@ -147,6 +147,10 @@ form.auditioneer_audition_signup div.auditioneer_audition_message {
   float:left;
   width:60%;
 }
+form.auditioneer_audition_signup div.auditioneer_audition_detailed_message {
+  float:left;
+  width:90%;
+}
 form.auditioneer_audition_signup fieldset.auditioneer_audition_signup_dummy_panel {
   display:none;
 }

@@ -250,7 +250,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
 /*
   $trace = debug_backtrace();
   foreach ($trace as $stack => $caller){
-  dpm("form callback invoked on $nid by [$stack] ".print_r($caller['function'], true));
+//  dpm("form callback invoked on $nid by [$stack] ".print_r($caller['function'], true));
   }
  */
   $interval = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'];
@@ -633,29 +633,34 @@ function _auditioneer_save_all_slots($groups, $form_state){
  * Implements hook_mail()
  */
 function auditioneer_mail($key, &$message, $params){
-  //  $data['timeslot'] = $params[0];
-  //  $data['audition'] = $params[1];
-  //  if($params[2] != null){
-  //    $data['slottype'] = $params[2];
-  //  }
-  //  user_mail_tokens($variables, $data, $options);
+  list($timeslot, $audition, $infoblock) = $params;
   $options['language'] = $message['language'];
   $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
   $message['headers']['MIME-Version'] = '1.0';
   $message['headers']['Content-Transfer-Encoding'] = '8bit';
+  $langcode = $message['language']->language;
+  $message['headers']['Bcc'] = $message['to'];
+  unset($message['to']);
   switch($key) {
   case 'placement':
-    // If the recipient can receive such notices by instant-message, do
-    // not send by email.
-    $langcode = $message['language']->language;
-    $message['subject'] = mime_header_encode(t('Audition slot for '.$params[1]->title, array(), array('langcode' => $langcode)));
-    $message['body'][] = t("<p>Your audition time: <strong>".$params[0]."</strong></p>\n", array(), array('langcode' => $langcode));
-    $location = drupal_render(field_view_field('node', $params[1], 'field_auditioneer_location', 'auditioneer_audition_signup_form'));
+    $message['subject'] = mime_header_encode(t('Audition slot for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['body'][] = t("<p><strong>Your audition time:</strong> $timeslot</p>\n", array(), array('langcode' => $langcode));
+    $location = preg_replace('/class="field-label"/', 'class="field-label" style="font-weight:bold;"', drupal_render(field_view_field('node', $audition, 'field_auditioneer_location', 'auditioneer_audition_signup_form')));
     $message['body'][] = t("<p>$location</p>\n", array(), array('langcode' => $langcode));
 
-    $instructions = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $params[1], 'field_auditioneer_email_instruct', 'auditioneer_audition_signup_form')));
-    $message['body'][] = t($instructions, array(), array('langcode' => $langcode));
     break;
+  case 'waitlist':
+    $message['subject'] = mime_header_encode(t('Waitlist for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['body'][] = t("<p>You have been placed on the Waitlist for the audition \"$audition->title.\"</p>\n", array(), array('langcode' => $langcode));
+    break;
+  case 'ineligible':
+    $message['subject'] = mime_header_encode(t('Ineligible for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['body'][] = t("<p>We're sorry, you are ineligible for the audition \"$audition->title\" at this time.</p>\n", array(), array('langcode' => $langcode));
+    break;
+  }
+
+  if(!empty($infoblock)){
+    $message['body'][] = t($infoblock, array(), array('langcode' => $langcode));
   }
 }
 
@@ -686,6 +691,13 @@ function _auditioneer_get_slot_map($audition){
 function _auditioneer_notify_users($audition){
   $slot_map = _auditioneer_get_slot_map($audition);
 
+  $got_slot_recips = array();
+  $got_slot_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioneer_granted_info', 'auditioneer_audition_signup_form')));
+  $waitlist_recips = array();
+  $waitlist_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioneer_waitlist_info', 'auditioneer_audition_signup_form')));
+  $ineligible_recips = array();
+  $ineligible_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioner_ineligible_info', 'auditioneer_audition_signup_form')));
+
   $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
   $result = $query
@@ -695,13 +707,12 @@ function _auditioneer_notify_users($audition){
     ->execute();
 
   $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
-
+  $messages = array();
   while($req = $result->fetchAssoc()){
     $name = $req['name'];
     $mail = $req['mail'];
     $req['availability'] = unserialize($req['availability']);
     $req['contact_data'] = unserialize($req['contact_data']);
-    $account = user_load($req['uid']);
     if($req['contact_data']){
       if(isset($req['contact_data']['name'])){
         $name = $req['contact_data']['name'];
@@ -710,19 +721,42 @@ function _auditioneer_notify_users($audition){
         $mail = $req['contact_data']['email'];
       }
     }
+    // XXX testing
+//$mail = "stange@johnstange.net";
     if($req['placement'] != null && $req['placement'] > 0){
-      // received a slot
-      $params = array($slot_map[$req['placement']], $audition, $req['slot_type']);
-      $message = drupal_mail("auditioneer", "placement", "$name <$mail>", user_preferred_language($account), $params, $from, true);
+      if(!array_key_exists($slot_map[$req['placement']], $got_slot_recips)){
+        $got_slot_recips[$slot_map[$req['placement']]] = array();
+      }
+      $got_slot_recips[$slot_map[$req['placement']]][] = "$name <$mail>";
     } elseif($req['placement'] != null && $req['placement'] < 0){
-      // disqualified
-
+      if(!empty($ineligible_info)){
+        $ineligible_recips[] = "$name <$mail>";
+      }
     } else {
-      // waitlisted
+      if(!empty($waitlist_info)){
+        $waitlist_recips[] = "$name <$mail>";
+      }
 
     }
   }
 
+  if(count($waitlist_recips) > 0){
+    $params = array(0, $audition, $waitlist_info);
+    $messages[] = drupal_mail("auditioneer", "waitlist", implode(", ", $waitlist_recips), language_default(), $params, $from, true);
+  }
+  if(count($ineligible_recips) > 0){
+    $params = array(0, $audition, $ineligible_info);
+    $messages[] = drupal_mail("auditioneer", "ineligible", implode(", ", $ineligible_recips), language_default(), $params, $from, true);
+  }
+  $got_slot_count = 0;
+  foreach ($got_slot_recips as $group => $recips){
+    $params = array($group, $audition, $got_slot_info);
+    $got_slot_count += count($recips);
+    $messages[] = drupal_mail("auditioneer", "placement", implode(", ", $recips), language_default(), $params, $from, true);
+
+  }
+
+  drupal_set_message("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.");
 }
 
 
@@ -831,6 +865,8 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
 
+  // XXX testing
+//_auditioneer_notify_users($audition);
   switch ($form_state['triggering_element']['#name']) {
   case "saveinterval-$nid":
     $newinterval = $form_state['input']['interval'];
