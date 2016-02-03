@@ -105,6 +105,11 @@
       // We hide the comments and links now so that we can render them later.
       hide($content['comments']);
       hide($content['field_lottery_time_blocks']);
+      hide($content['field_auditioneer_instructions']);
+      hide($content['field_auditioneer_collect']);
+      hide($content['field_auditioneer_granted_info']);
+      hide($content['field_auditioneer_waitlist_info']);
+      hide($content['field_auditioneer_ineligible_info']);
       hide($content['links']);
       print render($content);
     }

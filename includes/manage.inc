@@ -759,6 +759,57 @@ function _auditioneer_notify_users($audition){
   drupal_set_message("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.");
 }
 
+/**
+ * Display a simple list of signups for an audition where signups aren't closed
+ * yet.
+ */
+function _auditioneer_simple_list($audition){
+  $output = "";
+
+  $query = db_select('auditioneer_signups', 's');
+  $query->join('users', 'u', 's.uid = u.uid');
+  $result = $query
+    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
+    ->fields('u', array('name', 'mail'))
+    ->condition('nid', $audition->nid)
+    ->execute();
+
+  $groups_printed = array();
+
+  $entered = array();
+  while($req = $result->fetchAssoc()){
+    $req['realname'] = $req['name'];
+    $req['realmail'] = $req['mail'];
+    $req['realphone'] = "";
+    $req['availability'] = unserialize($req['availability']);
+    $req['contact_data'] = unserialize($req['contact_data']);
+    $account = user_load($req['uid']);
+    if($req['contact_data']){
+      if(isset($req['contact_data']['name'])){
+        $req['realname'] = $req['contact_data']['name'];
+      }
+      if(isset($req['contact_data']['email'])){
+        $req['realmail'] = $req['contact_data']['email'];
+      }
+      if(isset($req['contact_data']['phone'])){
+        $req['realphone'] = $req['contact_data']['phone'];
+      }
+    }
+    $entered[] = $req;
+  }
+
+  usort($entered, '_auditioneer_sort_signups');
+  $output .= "<h2>Current signups</h2>";
+  foreach ($entered as $req){
+    $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
+    if(!empty($req['realphone'])){
+      $output .= " - <em>".$req['realphone']."</em>";
+    }
+    $output .= "<br />";
+  }
+
+  return($output);
+}
 
 /**
  * Display a printer-friendly version of our signup list. Intended for
@@ -995,6 +1046,7 @@ function auditioneer_manage($nid, $mode = null) {
   $deadline_time = strtotime($deadline_str['#items'][0]['value']);
   if(time() < $deadline_time){
     $output['#markup'] = "<h1>SIGNUPS HAVE NOT YET CLOSED</h1>".drupal_render(node_view($audition, "full"));
+    $output['#markup'] .= _auditioneer_simple_list($audition);
     return $output;
   }
 
