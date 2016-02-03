@@ -263,8 +263,22 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     ->execute();
   $placements = $unplaced = $disqualified = $tentative = array();
   while($req = $result->fetchAssoc()){
+    $req['realname'] = $req['name'];
+    $req['realmail'] = $req['mail'];
+    $req['realphone'] = "";
     $req['availability'] = unserialize($req['availability']);
     $req['contact_data'] = unserialize($req['contact_data']);
+    if($req['contact_data']){
+      if(isset($req['contact_data']['name'])){
+        $req['realname'] = $req['contact_data']['name'];
+      }
+      if(isset($req['contact_data']['email'])){
+        $req['realmail'] = $req['contact_data']['email'];
+      }
+      if(isset($req['contact_data']['phone'])){
+        $req['realphone'] = $req['contact_data']['phone'];
+      }
+    }
     if($req['placement'] != null && $req['placement'] > 0){
       $placements[$req['placement']] = $req;
     } elseif($req['placement'] != null && $req['placement'] < 0){
@@ -504,7 +518,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   if($finalized){
     $emails = array();
     foreach ($placements as $req){
-      $emails[] = $req['name']." <".$req['mail'].">";
+      $emails[] = $req['realname']." <".$req['realmail'].">";
     }
     $form['emails_assigned'] = array(
       '#type' => 'textarea',
@@ -515,7 +529,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     );
     $wl_emails = array();
     foreach ($unplaced as $req){
-      $wl_emails[] = $req['name']." <".$req['mail'].">";
+      $wl_emails[] = $req['realname']." <".$req['realmail'].">";
     }
     $form['emails_waitlisted'] = array(
       '#type' => 'textarea',
@@ -526,7 +540,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
     );
     $dq_emails = array();
     foreach ($disqualified as $req){
-      $dq_emails[] = $req['name']." <".$req['mail'].">";
+      $dq_emails[] = $req['realname']." <".$req['realmail'].">";
     }
     $form['emails_rejected'] = array(
       '#type' => 'textarea',
@@ -929,6 +943,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       field_attach_update('node', $audition);
       entity_get_controller('node')->resetCache(array($audition->nid));
     }
+    return(_auditioneer_new_form($nid, $form_state));
     break;
   case "finalize-$nid":
     _auditioneer_save_all_slots($groups, $form_state);
@@ -936,14 +951,17 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
     field_attach_update('node', $audition);
     entity_get_controller('node')->resetCache(array($audition->nid));
     _auditioneer_notify_users($audition);
+    return(_auditioneer_new_form($nid, $form_state));
     break;
   case "save-$nid":
     _auditioneer_save_all_slots($groups, $form_state);
+    return(_auditioneer_new_form($nid, $form_state));
     break;
   case "reassign-$nid":
     // this doesn't actually have to do anything, reloading the form will
     // plant new assignments into unsaved slots
     drupal_set_message("Reassigned all unsaved and empty slots with random selections.");
+    return(_auditioneer_new_form($nid, $form_state));
     break;
   case "unassign-$nid":
     drupal_set_message("Removed all assignments from $audition->title", "warning");
@@ -952,6 +970,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       ->condition('nid', $form_state['values']['audition_id'])
       ->condition('placement', 1, '>=')
       ->execute();
+    return(_auditioneer_new_form($nid, $form_state));
     break;
   default:
     // These are all AJAX responses.

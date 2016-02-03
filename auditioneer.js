@@ -4,6 +4,10 @@ jQuery(document).ready(function ($) {
   $(".auditioneer_audition_timeblock_paint_unchecked").css("color", Drupal.settings.auditioneer.timeblock_unchecked_text);
   $(".auditioneer_audition_timeblock_paint_unchecked").css("background-color", Drupal.settings.auditioneer.timeblock_unchecked);
 
+  $("input.audition_signup_cancel").click(function (e) {
+    return window.confirm("Are you sure? This will cancel your audition entirely. If the signup deadline has passed, you will not be able to sign up for this audition again.");
+  });
+
   $(".auditioneer_audition_timeblock_paint").click(function () {
     if(!$(this).hasClass("auditioneer_audition_timeblock_paint_disabled")){
       if($(this).hasClass("auditioneer_audition_timeblock_paint_unchecked")){

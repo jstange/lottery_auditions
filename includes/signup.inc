@@ -165,6 +165,16 @@ function _auditioneer_signup_form($form, &$form_state, $args){
       '#attributes' => array('class' => array('auditioneer_audition_signup_contact_panel')),
     )
   );
+
+  if(count($ext_requests) > 0 && is_array($ext_requests)){
+    $form['audition_signup_fieldset']['optout'] = array(
+      '#type' => 'submit',
+      '#weight' => 98,
+      '#attributes' => array('class' => array('audition_signup_submit', 'audition_signup_cancel')),
+      '#value' => "Cancel"
+    );
+  }
+
   $form['#attributes'] = array('class' => array('auditioneer_audition_signup'));
   $form['#submit'] = array('auditioneer_audition_signup_submit_callback');
   $form['#validate'] = array('auditioneer_audition_signup_validate_callback');
@@ -461,6 +471,9 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
   $selected_blocks = array();
   $nid = $form_state['input']['audition_id'];
   $audition = node_load($form_state['input']['audition_id']);
+  if($form_state['input']['op'] == "Cancel"){
+    return($form);
+  }
 
   $req_contact_fields = Array();
   $contact_items = field_view_field('node', $audition, 'field_auditioneer_collect', 'auditioneer_audition_signup_form');
@@ -539,6 +552,15 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   $requested_blocks = array();
   $count = 0;
   $slot_type = null;
+  
+  if($form_state['input']['op'] == "Cancel"){
+    db_delete('auditioneer_signups')
+      ->condition('nid', $nid)
+      ->condition('uid', $user->uid)
+      ->execute();
+    return($form);
+  }
+
   while (array_key_exists($count, $timeblocks)){
     if(array_key_exists("${nid}_timeblock_$count", $form_state['input'])){
       $item = array_pop($timeblocks[$count]['entity']['field_collection_item']);

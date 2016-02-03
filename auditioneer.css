@@ -537,3 +537,6 @@ a.auditioneer_printlink img {
   max-height:1.1em;
   max-width:1.1em;
 }
+input.audition_signup_cancel {
+  border:1px solid red;
+}
