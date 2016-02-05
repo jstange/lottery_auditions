@@ -365,6 +365,10 @@ fieldset.audition_mgmt_slot_entry img.audition_signup_mgmt_button {
   border-right:1px solid #b4b4b4;
   border-radius:0.6em;
 }
+div.content > a > img.audition_signup_mgmt_button {
+  margin-left:0.5em;
+  height:1.1em;
+}
 div.audition_waitlist .audition_mgmt_table_auditioner_label,
 div.audition_rejectlist .audition_mgmt_table_auditioner_label,
 div.audition_signup_mgmt_form fieldset.audition-mgmt-group-block .audition_mgmt_table_auditioner_label {

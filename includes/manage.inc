@@ -216,8 +216,8 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
 
   if($req){
     $slot['uid']['#value'] = $req['uid'];
-    $name = $req['name'];
-    $mail = $req['mail'];
+    $name = $req['realname'];
+    $mail = $req['realmail'];
     if($req['contact_data']){
       if(isset($req['contact_data']['name'])){
         $name = $req['contact_data']['name'];
@@ -239,6 +239,50 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
   return ($slot);
 }
 
+function _auditioneer_load_requests($nid){
+  $query = db_select('auditioneer_signups', 's');
+  $query->join('users', 'u', 's.uid = u.uid');
+  $result = $query
+    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
+    ->fields('u', array('name', 'mail'))
+    ->condition('nid', $nid)
+    ->execute();
+  $requests = array();
+  while($req = $result->fetchAssoc()){
+    $req['realname'] = $req['name'];
+    $req['realmail'] = $req['mail'];
+    $req['realphone'] = "";
+    $req['availability'] = unserialize($req['availability']);
+    $req['contact_data'] = unserialize($req['contact_data']);
+    $fn_field = variable_get('auditioneer_firstname_field');
+    $ln_field = variable_get('auditioneer_lastname_field');
+    if(!empty($fn_field) || !empty($ln_field)){
+      $account = user_load($req['uid']);
+      $first = $last = "";
+      if(property_exists($account, $fn_field)){
+        $first = $account->{$fn_field}[LANGUAGE_NONE][0]['value'];
+      }
+      if(property_exists($account, $ln_field)){
+        $last = $account->{$ln_field}[LANGUAGE_NONE][0]['value'];
+      }
+      $req['realname'] = "$first $last";
+    }
+    if($req['contact_data']){
+      if(isset($req['contact_data']['name'])){
+        $req['realname'] = $req['contact_data']['name'];
+      }
+      if(isset($req['contact_data']['email'])){
+        $req['realmail'] = $req['contact_data']['email'];
+      }
+      if(isset($req['contact_data']['phone'])){
+        $req['realphone'] = $req['contact_data']['phone'];
+      }
+    }
+    $requests[] = $req;
+  }
+  return ($requests);
+}
+
 function _auditioneer_mgmt_form($form, &$form_state, $args){
   global $user;
   $nid = $args[0];
@@ -254,31 +298,11 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   }
  */
   $interval = $audition->field_auditioneer_group_interval[LANGUAGE_NONE][0]['value'];
-  $query = db_select('auditioneer_signups', 's');
-  $query->join('users', 'u', 's.uid = u.uid');
-  $result = $query
-    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
-    ->fields('u', array('name', 'mail'))
-    ->condition('nid', $nid)
-    ->execute();
+
   $placements = $unplaced = $disqualified = $tentative = array();
-  while($req = $result->fetchAssoc()){
-    $req['realname'] = $req['name'];
-    $req['realmail'] = $req['mail'];
-    $req['realphone'] = "";
-    $req['availability'] = unserialize($req['availability']);
-    $req['contact_data'] = unserialize($req['contact_data']);
-    if($req['contact_data']){
-      if(isset($req['contact_data']['name'])){
-        $req['realname'] = $req['contact_data']['name'];
-      }
-      if(isset($req['contact_data']['email'])){
-        $req['realmail'] = $req['contact_data']['email'];
-      }
-      if(isset($req['contact_data']['phone'])){
-        $req['realphone'] = $req['contact_data']['phone'];
-      }
-    }
+  $requests = _auditioneer_load_requests($nid);
+  foreach ($requests as $req){
+//  while($req = $result->fetchAssoc()){
     if($req['placement'] != null && $req['placement'] > 0){
       $placements[$req['placement']] = $req;
     } elseif($req['placement'] != null && $req['placement'] < 0){
@@ -780,44 +804,26 @@ function _auditioneer_notify_users($audition){
 function _auditioneer_simple_list($audition){
   $output = "";
 
-  $query = db_select('auditioneer_signups', 's');
-  $query->join('users', 'u', 's.uid = u.uid');
-  $result = $query
-    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
-    ->fields('u', array('name', 'mail'))
-    ->condition('nid', $audition->nid)
-    ->execute();
-
-  $groups_printed = array();
-
-  $entered = array();
-  while($req = $result->fetchAssoc()){
-    $req['realname'] = $req['name'];
-    $req['realmail'] = $req['mail'];
-    $req['realphone'] = "";
-    $req['availability'] = unserialize($req['availability']);
-    $req['contact_data'] = unserialize($req['contact_data']);
-    $account = user_load($req['uid']);
-    if($req['contact_data']){
-      if(isset($req['contact_data']['name'])){
-        $req['realname'] = $req['contact_data']['name'];
-      }
-      if(isset($req['contact_data']['email'])){
-        $req['realmail'] = $req['contact_data']['email'];
-      }
-      if(isset($req['contact_data']['phone'])){
-        $req['realphone'] = $req['contact_data']['phone'];
-      }
-    }
-    $entered[] = $req;
-  }
+  $entered = _auditioneer_load_requests($audition->nid);
 
   usort($entered, '_auditioneer_sort_signups');
   $output .= "<h2>Current signups</h2>";
   foreach ($entered as $req){
-    $output .= "<strong>".$req['realname']."</strong> &lt;".$req['realmail']."&gt;";
+    if($req['uid'] > 0){
+      $output .= "<a href='/users/".$req['name']."' target='_blank'>".$req['realname']."</a>";
+    } else {
+      $output .= "<strong>".$req['realname']."</strong>";
+    }
+    if(!empty($req['realmail'])){
+      $output .= " &lt;<a href='mailto:".$req['realmail']."'>".$req['realmail']."</a>&gt;";
+    }
     if(!empty($req['realphone'])){
-      $output .= " - <em>".$req['realphone']."</em>";
+      $output .= " - <em><a href='tel:".$req['realphone']."'>".$req['realphone']."</a></em>";
+    }
+    if(is_array($req['contact_data']) &&
+       array_key_exists("resume", $req['contact_data']) &&
+       !empty($req['contact_data']['resume'])){
+      $output .= "<a href='".file_create_url($req['contact_data']['resume'])."' target='_blank'><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png' class='audition_signup_mgmt_button'></a>";
     }
     $output .= "<br />";
   }
@@ -832,35 +838,12 @@ function _auditioneer_simple_list($audition){
 function _auditioneer_printable($audition){
   $output = "";
 
-  $query = db_select('auditioneer_signups', 's');
-  $query->join('users', 'u', 's.uid = u.uid');
-  $result = $query
-    ->fields('s', array('uid', 'availability', 'placement', 'slot_type', 'contact_data'))
-    ->fields('u', array('name', 'mail'))
-    ->condition('nid', $audition->nid)
-    ->execute();
+  $requests = _auditioneer_load_requests($audition->nid);
 
   $groups_printed = array();
 
   $placed = $waitlisted = $ineligible = array();
-  while($req = $result->fetchAssoc()){
-    $req['realname'] = $req['name'];
-    $req['realmail'] = $req['mail'];
-    $req['realphone'] = "";
-    $req['availability'] = unserialize($req['availability']);
-    $req['contact_data'] = unserialize($req['contact_data']);
-    $account = user_load($req['uid']);
-    if($req['contact_data']){
-      if(isset($req['contact_data']['name'])){
-        $req['realname'] = $req['contact_data']['name'];
-      }
-      if(isset($req['contact_data']['email'])){
-        $req['realmail'] = $req['contact_data']['email'];
-      }
-      if(isset($req['contact_data']['phone'])){
-        $req['realphone'] = $req['contact_data']['phone'];
-      }
-    }
+  foreach ($requests as $req){
     if($req['placement'] != null && $req['placement'] > 0){
       $placed[$req['placement']] = $req;
     } elseif($req['placement'] != null && $req['placement'] < 0){

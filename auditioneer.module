@@ -74,6 +74,22 @@ function auditioneer_admin() {
     '#description' => t("Where to store uploaded headshots/resum&eacute;s, as a Drupal file URI. Recommended value: <strong>private://</strong>. You must first ensure that the Private file system path is correctly configured at <a href='/admin/config/media/file-system'>/admin/config/media/file-system</a>. Uploaded resum&eacute;s will be anonymously accessible if this is set to <strong>public://</strong>."),
     '#required' => TRUE
   );
+  $form['auditioneer_firstname_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Given name field:'),
+    '#size' => 25,
+    '#default_value' => variable_get('auditioneer_firstname_field'),
+    '#description' => t("If user accounts on this site have extra fields for storign a user's real name, set this to the field name of the first name/given name (e.g. field_firstname))"),
+    '#required' => FALSE
+  );
+  $form['auditioneer_lastname_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Surname field:'),
+    '#size' => 25,
+    '#default_value' => variable_get('auditioneer_lastname_field'),
+    '#description' => t("If user accounts on this site have extra fields for storign a user's real name, set this to the field name of the last name/surname (e.g. field_lastname)"),
+    '#required' => FALSE
+  );
 
   $form['auditioneer_messaging'] = array(
     '#type' => 'fieldset',
