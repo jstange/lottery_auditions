@@ -220,6 +220,24 @@ function auditioneer_admin() {
     '#description' => t("The background color for the corner banner on a lottery audition signup form when the lottery is closed and the user has NOT signed up."),
     '#required' => TRUE,
   );
+  $form['auditioneer_corner_banner']['auditioneer_signup_unfinalized_banner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner text for auditions past the signup deadline but not yet finalized.'),
+    '#default_value' => variable_get('auditioneer_signup_unfinalized_banner'),
+    '#size' => 15,
+    '#maxlength' => 18,
+    '#required' => false,
+  );
+
+  $form['auditioneer_corner_banner']['auditioneer_signup_unfinalized_color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Banner background color for auditions past the signup deadline but not yet finalized.'),
+    '#default_value' => variable_get('auditioneer_signup_unfinalized_color'),
+    '#size' => 20,
+    '#maxlength' => 15,
+    '#element_validate' => array('auditioneer_element_validate_css_color'),
+    '#required' => TRUE,
+  );
   $form['auditioneer_corner_banner']['auditioneer_signup_gotslot_banner'] = array(
     '#type' => 'textfield',
     '#title' => t('Banner text for finalized auditions where the user has been assigned a definite slot.'),

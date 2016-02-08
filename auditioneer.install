@@ -85,13 +85,15 @@ function auditioneer_install() {
   variable_set('auditioneer_signup_open_color', 'LimeGreen');
   variable_set('auditioneer_signup_signedup_color', 'CornflowerBlue');
   variable_set('auditioneer_signup_closed_nosignup_color', 'LightCoral');
+  variable_set('auditioneer_signup_unfinalized_color', 'CornflowerBlue');
   variable_set('auditioneer_signup_gotslot_color', 'LimeGreen');
   variable_set('auditioneer_signup_waitlist_color', 'GoldenRod');
   variable_set('auditioneer_signup_ineligible_color', "LightCoral");
 
   variable_set('auditioneer_signup_open_banner', "Open");
-  variable_set('auditioneer_signup_signedup_banner', "Assigning Soon...");
+  variable_set('auditioneer_signup_signedup_banner', "Entered");
   variable_set('auditioneer_signup_closed_nosignup_banner', "Closed");
+  variable_set('auditioneer_signup_unfinalized_banner', "Assigning Soon...");
   variable_set('auditioneer_signup_gotslot_banner', "Confirmed");
   variable_set('auditioneer_signup_waitlist_banner', "Waitlisted");
   variable_set('auditioneer_signup_ineligible_banner', "");
