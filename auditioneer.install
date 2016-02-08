@@ -79,13 +79,22 @@ function auditioneer_install() {
   variable_set('auditioneer_signup_closed_message', t("<strong>The signup deadline has passed, but you are already registered</strong>. Once auditioners have been selected, you will be notified of your status."));
   variable_set('auditioneer_signup_closed_nosignup_message', t("<strong>The signup deadline has passed</strong>."));
   variable_set('auditioneer_signup_signedup_message', t("<strong>You are already registered</strong>. You may update your availability below at any point until the signup deadline has passed. Once auditioners have been selected, you will be notified of your status."));
+  variable_set('auditioneer_signup_finalized_waitlisted_message', t("You have been placed on the <strong>Waitlist</strong> for this audition."));
+  variable_set('auditioneer_signup_finalized_ineligible_message', t("We're sorry, but we are unable to provide you with an audition slot at this time."));
+
   variable_set('auditioneer_signup_open_color', 'LimeGreen');
   variable_set('auditioneer_signup_signedup_color', 'CornflowerBlue');
   variable_set('auditioneer_signup_closed_nosignup_color', 'LightCoral');
+  variable_set('auditioneer_signup_gotslot_color', 'LimeGreen');
+  variable_set('auditioneer_signup_waitlist_color', 'GoldenRod');
+  variable_set('auditioneer_signup_ineligible_color', "LightCoral");
 
-  variable_set('auditioneer_signup_open_banner', 'Open');
-  variable_set('auditioneer_signup_signedup_banner', 'Pending');
-  variable_set('auditioneer_signup_closed_nosignup_banner', 'Closed');
+  variable_set('auditioneer_signup_open_banner', "Open");
+  variable_set('auditioneer_signup_signedup_banner', "Assigning Soon...");
+  variable_set('auditioneer_signup_closed_nosignup_banner', "Closed");
+  variable_set('auditioneer_signup_gotslot_banner', "Confirmed");
+  variable_set('auditioneer_signup_waitlist_banner', "Waitlisted");
+  variable_set('auditioneer_signup_ineligible_banner', "");
 
   variable_set('auditioneer_timeblock_checked_text', 'black');
   variable_set('auditioneer_timeblock_checked', 'PaleGreen');

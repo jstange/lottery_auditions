@@ -183,16 +183,20 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   if($finalized && count($ext_requests) > 0 && is_array($ext_requests)){
     $msg = "";
     $info = "";
+    $banner = "";
     if($ext_requests['placement'] > 0){
       $slot_map = _auditioneer_get_slot_map($audition);
       $msg = "Your audition: ".$slot_map[$ext_requests['placement']];
       $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_granted_info', 'auditioneer_audition_signup_form'));
+      $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_gotslot_color').";'>".variable_get('auditioneer_signup_gotslot_banner', "")."</div>";
     } elseif($ext_requests['placement'] == 0){
-      $msg = "You have been placed on the Waitlist for this audition.";
+      $msg = variable_get("auditioneer_signup_finalized_waitlisted_message", "");
       $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_waitlist_info', 'auditioneer_audition_signup_form'));
+      $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_waitlist_color').";'>".variable_get('auditioneer_signup_waitlist_banner', "")."</div>";
     } elseif($ext_requests['placement'] < 0){
-      $msg = "You are currently not eligible for this audition.";
+      $msg = variable_get("auditioneer_signup_finalized_ineligible_message", "");
       $info = drupal_render(field_view_field('node', $audition, 'field_auditioneer_ineligible_info', 'auditioneer_audition_signup_form'));
+      $banner = "<span class='auditioneer_audition_signup_banner_text' style='background-color:".variable_get('auditioneer_signup_ineligible_color').";'>".variable_get('auditioneer_signup_ineligible_banner', "")."</div>";
     }
     $info = preg_replace("/\n/", "<br />", $info);
     $form['audition_signup_fieldset']['info_panel']['#suffix'] .= "<div class='auditioneer_audition_infoblock'><div class='auditioneer_audition_deadline'></div><div class='auditioneer_audition_detailed_message'><p><strong>$msg</strong></p>$info</div></div>";
