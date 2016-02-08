@@ -515,10 +515,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   }
   $form['slots']['audition_mgmt_table']['#title'] = t("Current Assignments ($saved_count, ".count($tentative)." unsaved)");
 
-  $wl_count = count($unplaced)-count($tentative);
-  if($wl_count < 0){
-    $wl_count = 0;
-  }
+  $wl_count = count($unplaced);
 
   $form['slots']['audition_mgmt_unassigned_list']['waitlist'] = array(
     '#prefix' => "<div id='audition_waitlist_$nid' class='audition_waitlist'>",
