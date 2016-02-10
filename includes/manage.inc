@@ -1,7 +1,7 @@
 <?php
 
 /* Given a slot, shove in a matching user. */
-function _auditioneer_assign_slot(&$auditioners, $timeblock, $slot_types){
+function _auditioneer_assign_slot_to_someone(&$auditioners, $timeblock, $slot_types){
   // XXX favor people who haven't had a slot in the longest time
   $assignee_key = $assignee = null;
   foreach ($auditioners as $key => $req){
@@ -495,7 +495,7 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
           $req = $placements[$slot_index];
           $saved_class = "saved";
         } elseif(count($unplaced) > 0){
-          $req = _auditioneer_assign_slot($unplaced, $realitem['field_auditioneer_timerange']['#items'][0], $slot_types);
+          $req = _auditioneer_assign_slot_to_someone($unplaced, $realitem['field_auditioneer_timerange']['#items'][0], $slot_types);
           $tentative[] = $req;
         }
         $classes = array('audition_mgmt_slot_entry', $saved_class);
@@ -675,7 +675,7 @@ function auditioneer_mail($key, &$message, $params){
   $message['headers']['Content-Transfer-Encoding'] = '8bit';
   $langcode = $message['language']->language;
   $message['headers']['Bcc'] = $message['to'];
-  unset($message['to']);
+  $message['to'] = "";
   switch($key) {
   case 'placement':
     $message['subject'] = mime_header_encode(t('Audition slot for '.$audition->title, array(), array('langcode' => $langcode)));
@@ -691,6 +691,10 @@ function auditioneer_mail($key, &$message, $params){
   case 'ineligible':
     $message['subject'] = mime_header_encode(t('Ineligible for '.$audition->title, array(), array('langcode' => $langcode)));
     $message['body'][] = t("<p>We're sorry, you are ineligible for the audition \"$audition->title\" at this time.</p>\n", array(), array('langcode' => $langcode));
+    break;
+  case 'admin_notify':
+    $message['subject'] = mime_header_encode(t('Sent Auditioneer slot notifications for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['body'][] = t("$timeslot\n", array(), array('langcode' => $langcode));
     break;
   }
 
@@ -723,7 +727,7 @@ function _auditioneer_get_slot_map($audition){
 /**
  * Send mail to people who got slots, who are waitlisted, etc
  */
-function _auditioneer_notify_users($audition){
+function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
   $slot_map = _auditioneer_get_slot_map($audition);
 
   $got_slot_recips = array();
@@ -744,6 +748,9 @@ function _auditioneer_notify_users($audition){
   $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
   $messages = array();
   while($req = $result->fetchAssoc()){
+    if(count($users) > 0 && !in_array($req['name'], $users)){
+      continue;
+    }
     $name = $req['name'];
     $mail = $req['mail'];
     $req['availability'] = unserialize($req['availability']);
@@ -784,14 +791,16 @@ function _auditioneer_notify_users($audition){
     $messages[] = drupal_mail("auditioneer", "ineligible", implode(", ", $ineligible_recips), language_default(), $params, $from, true);
   }
   $got_slot_count = 0;
-  foreach ($got_slot_recips as $group => $recips){
-    $params = array($group, $audition, $got_slot_info);
-    $got_slot_count += count($recips);
-    $messages[] = drupal_mail("auditioneer", "placement", implode(", ", $recips), language_default(), $params, $from, true);
-
+  if(count($got_slot_recips) > 0){
+    foreach ($got_slot_recips as $group => $recips){
+      $params = array($group, $audition, $got_slot_info);
+      $got_slot_count += count($recips);
+      $messages[] = drupal_mail("auditioneer", "placement", implode(", ", $recips), language_default(), $params, $from, true);
+    }
   }
 
-  drupal_set_message("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.");
+  $params = array("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.\n$reason", $audition, "");
+  drupal_mail("auditioneer", "admin_notify", $from, language_default(), $params, $from, true);
 }
 
 /**

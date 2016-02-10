@@ -1047,7 +1047,7 @@ function _auditioneer_field_instances() {
     'bundle' => 'auditioneer_audition',
     'default_value' => NULL,
     'deleted' => 0,
-    'description' => 'The contents of this field will be sent as a notification to users who have been granted an audition, and visible on the audition page for logged-in users.',
+    'description' => 'The contents of this field will be appended to the email notification to users who have been granted an audition, as well as visible on the audition page for logged-in users who have been granted an audition.',
     'display' => array(
       'auditioneer_audition_signup_form' => array(
         'label' => 'hidden',
