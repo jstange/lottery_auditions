@@ -104,10 +104,6 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $sl
     );
   }
 
-  if($finalized){
-    return;
-  }
-
   $slot_ajax = array(
     'callback' => 'auditioneer_audition_mgmt_submit_callback',
     'method' => 'replace',
@@ -115,10 +111,27 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $sl
   );
 
   if($type == "main" || $type == "waitlist"){
+    $slot['cancel'] = array(
+      '#type' => 'image_button',
+      '#name' => 'cancel'.$type.$slot_num,
+      '#src' => drupal_get_path('module', 'auditioneer')."/images/x.png",
+      '#default_value' => $req['uid'],
+      '#ajax' => $slot_ajax,
+      '#attributes' => array(
+        'class' => array('audition_signup_mgmt_reject', 'audition_signup_mgmt_button')
+      )
+    );
+  }
+
+  if($finalized){
+    return;
+  }
+
+  if($type == "main" || $type == "waitlist"){
     $slot['reject'] = array(
       '#type' => 'image_button',
       '#name' => 'reject'.$type.$slot_num,
-      '#src' => drupal_get_path('module', 'auditioneer')."/images/x.png",
+      '#src' => drupal_get_path('module', 'auditioneer')."/images/disqualify.png",
       '#default_value' => $req['uid'],
       '#ajax' => $slot_ajax,
       '#attributes' => array(
@@ -324,8 +337,10 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   if(!$finalized){
     $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/save.png'> = Save the current occupant of this audition slot.</div>
       <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
-      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
+      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/disqualify.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
       <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>";
+  } else {
+    $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Cancel this person's audition entirely, typically at their request. A random eligible request from the Waitlist will be promoted in its place, if one exists.</div>";
   }
 
 
@@ -748,7 +763,7 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
   $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
   $messages = array();
   while($req = $result->fetchAssoc()){
-    if(count($users) > 0 && !in_array($req['name'], $users)){
+    if(count($users) > 0 && !in_array($req['uid'], $users)){
       continue;
     }
     $name = $req['name'];
@@ -799,7 +814,7 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
     }
   }
 
-  $params = array("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.\n$reason", $audition, "");
+  $params = array("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.\n\n$reason", $audition, "");
   drupal_mail("auditioneer", "admin_notify", $from, language_default(), $params, $from, true);
 }
 
@@ -918,7 +933,6 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $audition = node_load($form_state['values']['audition_id']);
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
-
   // XXX testing
 //_auditioneer_notify_users($audition);
   switch ($form_state['triggering_element']['#name']) {
@@ -974,6 +988,9 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $group = $parents[count($parents)-3];
       $slot_index = $parents[count($parents)-2];
       drupal_set_message("Removed <strong>".$form_state['values'][$group][$slot_index]['username']."</strong> from eligibility for <strong>".$audition->title."</strong>", "warning");
+    } elseif(preg_match("/^cancel(main|waitlist)\d+/", $form_state['triggering_element']['#name'])){
+      _auditioneer_cancel_signup($nid, $audition, $form_state['triggering_element']['#default_value'], true);
+      // _auditioneer_cancel_signup does drupal_set_message on its own
     } elseif(preg_match("/^unreject\d+/", $form_state['triggering_element']['#name'])){
       db_update('auditioneer_signups')
         ->fields(array('placement' => 0))

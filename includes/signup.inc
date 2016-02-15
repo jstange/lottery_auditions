@@ -13,6 +13,10 @@ function _auditioneer_get_times($audition){
     return $_auditioneer_cached_times[$audition->nid];
   }
   $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'full');
+  if(!$timeblocks){
+    return array(0, 0);
+  }
+
   $count = $start = $end = 0;
   while(array_key_exists($count, $timeblocks)){
     $realitem = array_pop($timeblocks[$count]['entity']['field_collection_item']);
@@ -28,6 +32,7 @@ function _auditioneer_get_times($audition){
   if($start > 0 && $end > 0){
     $_auditioneer_cached_times[$audition->nid] = array($start, $end);
   }
+
   return array($start, $end);
 }
 
@@ -178,7 +183,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   $form['#attributes'] = array('class' => array('auditioneer_audition_signup'));
   $form['#submit'] = array('auditioneer_audition_signup_submit_callback');
   $form['#validate'] = array('auditioneer_audition_signup_validate_callback');
-//  list($start, $end) = _auditioneer_get_times($audition);
+  //  list($start, $end) = _auditioneer_get_times($audition);
   $banner = "";
   if($finalized && count($ext_requests) > 0 && is_array($ext_requests)){
     $msg = "";
@@ -547,9 +552,65 @@ function auditioneer_audition_signup_validate_callback($form, &$form_state){
 }
 
 
+function _auditioneer_cancel_signup($nid, $audition, $uid, $finalized){
+  $slot = null;
+  if($finalized){
+    $ext_request = db_select('auditioneer_signups', 's')
+      ->fields('s', array('placement'))
+      ->condition('nid', $nid)
+      ->condition('uid', $uid)
+      ->execute()
+      ->fetchAssoc();
+    $slot = $ext_request['placement'];
+  }
+  db_delete('auditioneer_signups')
+    ->condition('nid', $nid)
+    ->condition('uid', $uid)
+    ->execute();
+  drupal_set_message("Canceled signup for <strong>".$uid."</strong> in <strong>".$audition->title."</strong>", "warning");
+  if($slot && $slot > 0){
+    $groups = _auditioneer_list_groups($audition);
+    $slot_index = 1;
+    $open_timeblock = null;
+    $valid_slottypes = null;
+    foreach ($groups as $group){
+      list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
+      for($i=0; $i < $slots_per_group; $i++){
+        if($slot_index == $slot){
+          $open_timeblock = $timeblock;
+          $valid_slottypes = $slot_types;
+          break;
+        }
+        $slot_index++;
+      }
+      if($open_timeblock){
+        break;
+      }
+    }
+    $requests = _auditioneer_load_requests($nid);
+    $unplaced = array();
+    foreach ($requests as $req){
+      if($req['placement'] == null or $req['placement'] == 0){
+        $unplaced[] = $req;
+      }
+    }
+    $assigned = _auditioneer_assign_slot_to_someone($unplaced, $timeblock, $valid_slottypes);
+    if($assigned){
+      db_update('auditioneer_signups')
+        ->fields(array('placement' => $slot))
+        ->condition('nid', $nid)
+        ->condition('uid', $assigned['uid'])
+        ->execute();
+
+      drupal_set_message("Granted signup to <strong>".$assigned['realname']."</strong> in <strong>".$audition->title."</strong>");
+      _auditioneer_notify_users($audition, array($assigned['uid']), $assigned['realname']." has been granted an audition slot after a cancellation.");
+    }
+  }
+
+}
+
 function auditioneer_audition_signup_submit_callback($form, &$form_state){
   global $user;
-  print $user->uid;
   $nid = $form_state['input']['audition_id'];
   $audition = node_load($form_state['input']['audition_id']);
   $finalized = false;
@@ -560,61 +621,9 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   $requested_blocks = array();
   $count = 0;
   $slot_type = null;
-  
+
   if($form_state['input']['op'] == "Cancel"){
-    $slot = null;
-
-    if($finalized){
-      $ext_request = db_select('auditioneer_signups', 's')
-        ->fields('s', array('placement'))
-        ->condition('nid', $nid)
-        ->condition('uid', $user->uid)
-        ->execute()
-        ->fetchAssoc();
-      $slot = $ext_request['placement'];
-    }
-    db_delete('auditioneer_signups')
-      ->condition('nid', $nid)
-      ->condition('uid', $user->uid)
-      ->execute();
-    // hand over this slot to someone else
-    if($slot && $slot > 0){
-      $groups = _auditioneer_list_groups($audition);
-      $slot_index = 1;
-      $open_timeblock = null;
-      $valid_slottypes = null;
-      foreach ($groups as $group){
-        list($start, $end, $slots_per_group, $slot_types, $timeblock) = $group;
-        for($i=0; $i < $slots_per_group; $i++){
-          if($slot_index == $slot){
-            $open_timeblock = $timeblock;
-            $valid_slottypes = $slot_types;
-            break;
-          }
-          $slot_index++;
-        }
-        if($open_timeblock){
-          break;
-        }
-      }
-      $requests = _auditioneer_load_requests($nid);
-      $unplaced = array();
-      foreach ($requests as $req){
-        if($req['placement'] == null or $req['placement'] == 0){
-          $unplaced[] = $req;
-        }
-      }
-      $assigned = _auditioneer_assign_slot_to_someone($unplaced, $timeblock, $valid_slottypes);
-      if($assigned){
-        db_update('auditioneer_signups')
-          ->fields(array('placement' => $slot))
-          ->condition('nid', $nid)
-          ->condition('uid', $assigned['uid'])
-          ->execute();
-
-        _auditioneer_notify_users($audition, array($assigned['name']), $req['realname']." canceled their audition slot, gave it to ".$assigned['realname'].".");
-      }
-    }
+    _auditioneer_cancel_signup($nid, $audition, $user->uid, $finalized);
     return($form);
   }
 
