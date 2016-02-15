@@ -123,11 +123,7 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $sl
     );
   }
 
-  if($finalized){
-    return;
-  }
-
-  if($type == "main" || $type == "waitlist"){
+  if(!$finalized && ($type == "main" || $type == "waitlist")){
     $slot['reject'] = array(
       '#type' => 'image_button',
       '#name' => 'reject'.$type.$slot_num,
@@ -153,16 +149,22 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $sl
         )
       );
     }
-    $slot['reload'] = array(
-      '#type' => 'image_button',
-      '#name' => 'reload'.$slot_num,
-      '#src' => drupal_get_path('module', 'auditioneer')."/images/reload.png",
-      '#default_value' => $slot_num,
-      '#ajax' => $slot_ajax,
-      '#attributes' => array(
-        'class' => array('audition_signup_mgmt_reload', 'audition_signup_mgmt_button')
-      )
-    );
+    if(!$finalized){
+      $slot['reload'] = array(
+        '#type' => 'image_button',
+        '#name' => 'reload'.$slot_num,
+        '#src' => drupal_get_path('module', 'auditioneer')."/images/reload.png",
+        '#default_value' => $slot_num,
+        '#ajax' => $slot_ajax,
+        '#attributes' => array(
+          'class' => array('audition_signup_mgmt_reload', 'audition_signup_mgmt_button')
+        )
+      );
+    }
+  }
+
+  if($finalized){
+    return;
   }
 
   if($type == "waitlist"){
@@ -211,6 +213,14 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
       '#type' => 'hidden',
       '#name' => 'uid'.$slot_index
     );
+    $slot['username'] = array(
+      '#type' => 'hidden',
+      '#name' => 'username'.$slot_index
+    );
+    $slot['name'] = array(
+      '#type' => 'hidden',
+      '#name' => 'name'.$slot_index
+    );
   }
 /*
   XXX wait, this doesn't do anything. Make a nice little popup div from these
@@ -229,6 +239,7 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
 
   if($req){
     $slot['uid']['#value'] = $req['uid'];
+    $slot['username']['#value'] = $req['name'];
     $name = $req['realname'];
     $mail = $req['realmail'];
     if($req['contact_data']){
@@ -243,6 +254,7 @@ function _auditioneer_get_mgmt_slot_fields($req = null, $classes, $id, $show_slo
       $slot_type = " (".$req['slot_type'].")";
     }
     $slot['#title'] = "<div class='audition_mgmt_table_auditioner_label'><a href='/users/".$req['name']."' target='_blank'>".$name."</a>$slot_type</div>";
+    $slot['name']['#value'] = $name;
   } else {
     $slot['#title'] = "<div class='audition_mgmt_table_auditioner_label'>&lt;available&gt;</div>";
     $slot['#attributes']['class'][] = "unassigned";
@@ -933,6 +945,10 @@ function _auditioneer_printable($audition){
 function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
   $nid = $form_state['values']['audition_id'];
   $audition = node_load($form_state['values']['audition_id']);
+  $finalized = false;
+  if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
+    $finalized = true;
+  }
   $groups = _auditioneer_list_groups($audition);
   $form_state['rebuild'] = TRUE;
   // XXX testing
@@ -989,7 +1005,7 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
       $parents = $form_state['triggering_element']['#array_parents'];
       $group = $parents[count($parents)-3];
       $slot_index = $parents[count($parents)-2];
-      drupal_set_message("Removed <strong>".$form_state['values'][$group][$slot_index]['username']."</strong> from eligibility for <strong>".$audition->title."</strong>", "warning");
+      drupal_set_message("Removed <strong>".$form_state['values'][$group][$slot_index]['name']."</strong> from eligibility for <strong>".$audition->title."</strong>", "warning");
     } elseif(preg_match("/^cancel(main|waitlist)\d+/", $form_state['triggering_element']['#name'])){
       _auditioneer_cancel_signup($nid, $audition, $form_state['triggering_element']['#default_value'], true);
       // _auditioneer_cancel_signup does drupal_set_message on its own
@@ -1001,16 +1017,21 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
         ->execute();
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
-      drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> is now eligible for <strong>".$audition->title."</strong>");
+      drupal_set_message("<strong>".$form_state['values']['reject_list'][$slot_index]['name']."</strong> is now eligible for <strong>".$audition->title."</strong>");
     } elseif(preg_match("/^save\d+/", $form_state['triggering_element']['#name'])){
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
+      $group = $parents[count($parents)-3];
       db_update('auditioneer_signups')
         ->fields(array('placement' => $slot_index))
         ->condition('nid', $form_state['values']['audition_id'])
         ->condition('uid', $form_state['triggering_element']['#default_value'])
         ->execute();
-      drupal_set_message("User <strong>".$form_state['values']['reject_list'][$slot_index]['username']."</strong> saved to slot <strong>".$slot_index."</strong>");
+dpm($form_state['values'][$group][$slot_index]);
+      if($finalized){
+        _auditioneer_notify_users($audition, array($form_state['triggering_element']['#default_value']), $form_state['values'][$group][$slot_index]['name']." has been granted an audition slot after finalization.");
+      }
+      drupal_set_message("<strong>".$form_state['values'][$group][$slot_index]['name']."</strong> saved to slot <strong>".$slot_index."</strong>");
     } elseif(preg_match("/^reload\d+/", $form_state['triggering_element']['#name'])){
       $parents = $form_state['triggering_element']['#array_parents'];
       $slot_index = $parents[count($parents)-2];
@@ -1019,20 +1040,20 @@ function auditioneer_audition_mgmt_submit_callback($form, &$form_state){
         ->condition('nid', $form_state['values']['audition_id'])
         ->condition('placement', $form_state['triggering_element']['#default_value'])
         ->execute();
-      drupal_set_message("User <strong>".$form_state['values']['waitlist'][$slot_index]['username']."</strong> removed from slot <strong>".$slot_index."</strong> and waitlisted.");
+      drupal_set_message("<strong>".$form_state['values']['waitlist'][$slot_index]['name']."</strong> removed from slot <strong>".$slot_index."</strong> and waitlisted.");
     } elseif(preg_match("/^promote\d+/", $form_state['triggering_element']['#name'])){
       $slot_index = _auditioneer_assign_user_a_slot($audition, $form_state['triggering_element']['#default_value']);
       $parents = $form_state['triggering_element']['#array_parents'];
       $old_slot_index = $parents[count($parents)-2];
       if($slot_index < 1){
-        drupal_set_message("Failed to find a matching slot to promote user <strong>".$form_state['values']['waitlist'][$old_slot_index]['username']."</strong>", "warning");
+        drupal_set_message("Failed to find a matching slot to promote <strong>".$form_state['values']['waitlist'][$old_slot_index]['name']."</strong>", "warning");
       } else {
         db_update('auditioneer_signups')
           ->fields(array('placement' => $slot_index))
           ->condition('nid', $audition->nid)
           ->condition('uid', $form_state['triggering_element']['#default_value'])
           ->execute();
-        drupal_set_message("Promoted user <strong>".$form_state['values']['waitlist'][$old_slot_index]['username']."</strong> to slot <strong>$slot_index</strong>");
+        drupal_set_message("Promoted <strong>".$form_state['values']['waitlist'][$old_slot_index]['name']."</strong> to slot <strong>$slot_index</strong>");
       }
     }
     $commands[] = ajax_command_remove('div.messages');
