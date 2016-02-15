@@ -107,6 +107,7 @@ function auditioneer_install() {
   variable_set('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
   variable_set('auditioneer_resume_upload_path', 'public://');
 
+
   $role = user_role_load_by_name("administrator");
   if($role){
     user_role_grant_permissions($role->rid, array('administer auditions'));
@@ -151,6 +152,19 @@ function auditioneer_install() {
   menu_rebuild();
   node_types_rebuild();
   cache_clear_all();
+}
+
+/**
+ * Add MailSystem & MimeEmail configuration for Auditioneer to send HTML mail
+ */
+function auditioneer_update_1(){
+  $mail_system_settings = variable_get('mail_system', array());
+  $mail_system_settings['auditioneer_placement'] = "MimeMailSystem";
+  $mail_system_settings['auditioneer_admin_notify'] = "MimeMailSystem";
+  $mail_system_settings['auditioneer_ineligible'] = "MimeMailSystem";
+  $mail_system_settings['auditioneer_waitlist'] = "MimeMailSystem";
+  variable_set('mail_system', $mail_system_settings);
+  return t("Configured MailSystem to use MIMEmail for Auditioneer. Recommend visting /admin/config/system/mimemail and ensuring that 'E-mail format' is set correctly.");
 }
 
 /*

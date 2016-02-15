@@ -693,22 +693,23 @@ function auditioneer_mail($key, &$message, $params){
   $message['to'] = "";
   switch($key) {
   case 'placement':
-    $message['subject'] = mime_header_encode(t('Audition slot for '.$audition->title, array(), array('langcode' => $langcode)));
-    $message['body'][] = t("<p><strong>Your audition time:</strong> $timeslot</p>\n", array(), array('langcode' => $langcode));
+    $message['subject'] = t('Audition slot for '.$audition->title, array(), array('langcode' => $langcode));
+//    $message['subject'] = mime_header_encode(t('Audition slot for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['body'][] = t("<p><strong>Your audition time:</strong> $timeslot</p>\n\n", array(), array('langcode' => $langcode));
     $location = preg_replace('/class="field-label"/', 'class="field-label" style="font-weight:bold;"', drupal_render(field_view_field('node', $audition, 'field_auditioneer_location', 'auditioneer_audition_signup_form')));
-    $message['body'][] = t("<p>$location</p>\n", array(), array('langcode' => $langcode));
+    $message['body'][] = t("<p>$location</p>\n\n", array(), array('langcode' => $langcode));
 
     break;
   case 'waitlist':
-    $message['subject'] = mime_header_encode(t('Waitlist for '.$audition->title, array(), array('langcode' => $langcode)));
-    $message['body'][] = t("<p>You have been placed on the Waitlist for the audition \"$audition->title.\"</p>\n", array(), array('langcode' => $langcode));
+    $message['subject'] = t('Waitlist for '.$audition->title, array(), array('langcode' => $langcode));
+    $message['body'][] = t("<p>You have been placed on the Waitlist for the audition \"$audition->title.\"</p>\n\n", array(), array('langcode' => $langcode));
     break;
   case 'ineligible':
-    $message['subject'] = mime_header_encode(t('Ineligible for '.$audition->title, array(), array('langcode' => $langcode)));
-    $message['body'][] = t("<p>We're sorry, you are ineligible for the audition \"$audition->title\" at this time.</p>\n", array(), array('langcode' => $langcode));
+    $message['subject'] = t('Ineligible for '.$audition->title, array(), array('langcode' => $langcode));
+    $message['body'][] = t("<p>We're sorry, you are ineligible for the audition \"$audition->title\" at this time.</p>\n\n", array(), array('langcode' => $langcode));
     break;
   case 'admin_notify':
-    $message['subject'] = mime_header_encode(t('Sent Auditioneer slot notifications for '.$audition->title, array(), array('langcode' => $langcode)));
+    $message['subject'] = t('Sent Auditioneer slot notifications for '.$audition->title, array(), array('langcode' => $langcode));
     $message['body'][] = t("$timeslot\n", array(), array('langcode' => $langcode));
     break;
   }
@@ -746,11 +747,11 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
   $slot_map = _auditioneer_get_slot_map($audition);
 
   $got_slot_recips = array();
-  $got_slot_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioneer_granted_info', 'auditioneer_audition_signup_form')));
+  $got_slot_info = preg_replace("/\n/", "<br />\n", drupal_render(field_view_field('node', $audition, 'field_auditioneer_granted_info', 'auditioneer_audition_signup_form')));
   $waitlist_recips = array();
-  $waitlist_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioneer_waitlist_info', 'auditioneer_audition_signup_form')));
+  $waitlist_info = preg_replace("/\n/", "<br />\n", drupal_render(field_view_field('node', $audition, 'field_auditioneer_waitlist_info', 'auditioneer_audition_signup_form')));
   $ineligible_recips = array();
-  $ineligible_info = preg_replace("/\n/", "<br />", drupal_render(field_view_field('node', $audition, 'field_auditioner_ineligible_info', 'auditioneer_audition_signup_form')));
+  $ineligible_info = preg_replace("/\n/", "<br />\n", drupal_render(field_view_field('node', $audition, 'field_auditioner_ineligible_info', 'auditioneer_audition_signup_form')));
 
   $query = db_select('auditioneer_signups', 's');
   $query->join('users', 'u', 's.uid = u.uid');
@@ -761,6 +762,7 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
     ->execute();
 
   $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
+//$from = "stange@johnstange.net";
   $messages = array();
   while($req = $result->fetchAssoc()){
     if(count($users) > 0 && !in_array($req['uid'], $users)){
@@ -814,7 +816,7 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
     }
   }
 
-  $params = array("Sent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.\n\n$reason", $audition, "");
+  $params = array("$reason<br />\nSent email notifications to $got_slot_count slot recipients, ".count($waitlist_recips)." waitlisters, and ".count($ineligible_recips)." ineligibles.", $audition, "");
   drupal_mail("auditioneer", "admin_notify", $from, language_default(), $params, $from, true);
 }
 
@@ -846,7 +848,7 @@ function _auditioneer_simple_list($audition){
        !empty($req['contact_data']['resume'])){
       $output .= "<a href='".file_create_url($req['contact_data']['resume'])."' target='_blank'><img src='/".drupal_get_path('module', 'auditioneer')."/images/attachment.png' class='audition_signup_mgmt_button'></a>";
     }
-    $output .= "<br />";
+    $output .= "<br />\n";
   }
 
   return($output);

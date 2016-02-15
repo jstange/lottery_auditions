@@ -567,7 +567,7 @@ function _auditioneer_cancel_signup($nid, $audition, $uid, $finalized){
     ->condition('nid', $nid)
     ->condition('uid', $uid)
     ->execute();
-  drupal_set_message("Canceled signup for <strong>".$uid."</strong> in <strong>".$audition->title."</strong>", "warning");
+  drupal_set_message("Canceled signup for uid <strong>".$uid."</strong> in <strong>".$audition->title."</strong>", "warning");
   if($slot && $slot > 0){
     $groups = _auditioneer_list_groups($audition);
     $slot_index = 1;
