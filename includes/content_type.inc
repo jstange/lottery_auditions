@@ -117,6 +117,10 @@ function auditioneer_form_alter(&$form, $form_state, $form_id) {
       '#suffix' => '</div>',
     );
     $count = 0;
+    $requests = _auditioneer_load_requests($form_state['node']->nid);
+    if(count($requests) > 0){
+      $form['field_auditioneer_time_blocks']['#attributes']['class'][] = "auditioneer_hide_draggable";
+    }
     unset($form['field_auditioneer_finalized']); // internal-use field, hide from users
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#value'] = "US"; // XXX why doesn't #default_value work?
     $form['field_auditioneer_location'][LANGUAGE_NONE][0]['country']['#weight'] = 500;

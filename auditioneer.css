@@ -544,3 +544,57 @@ a.auditioneer_printlink img {
 input.audition_signup_cancel {
   border:1px solid red;
 }
+div.audition_waitlist fieldset.audition_mgmt_waitlist_entry div.auditioneer_popup_panel,
+div.audition_rejectlist fieldset.audition_mgmt_reject_entry div.auditioneer_popup_panel,
+div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry div.auditioneer_popup_panel,
+div.auditioneer_popup_panel {
+  position:fixed;
+  z-index:101;
+  font-size:small;
+  bottom:1em;
+  background-color:white;
+  color:black;
+  display:none;
+  padding:1.5em;
+  box-shadow: 10px 10px 5px #888888;
+  border-radius:1em;
+  border:1px solid black;
+}
+div.auditioneer_popup_panel div.auditioneer_popup_buttons {
+  position:absolute;
+  top:0.25em;
+  right:0.25em;
+}
+div.auditioneer_popup_panel div.auditioneer_popup_buttons span {
+  cursor:pointer;
+}
+div.auditioneer_popup_panel div.auditioneer_popup_buttons img.auditioneer_pin {
+  max-height:1.2em;
+  max-width:1.2em;
+  display:none;
+}
+div.auditioneer_popup_panel.pinned {
+  border:2px solid black !important;
+}
+div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry div.auditioneer_popup_panel {
+  right:1em;
+}
+div.audition_waitlist fieldset.audition_mgmt_waitlist_entry div.auditioneer_popup_panel,
+div.audition_rejectlist fieldset.audition_mgmt_reject_entry div.auditioneer_popup_panel {
+  left:1em;
+}
+div.audition_waitlist fieldset.audition_mgmt_waitlist_entry:hover div.auditioneer_popup_panel a,
+div.audition_rejectlist fieldset.audition_mgmt_reject_entry:hover div.auditioneer_popup_panel a,
+div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry:hover div.auditioneer_popup_panel a {
+  color:#0074BD;
+  text-decoration:none;
+}
+div.audition_waitlist fieldset.audition_mgmt_waitlist_entry:hover div.auditioneer_popup_panel a:hover,
+div.audition_rejectlist fieldset.audition_mgmt_reject_entry:hover div.auditioneer_popup_panel a:hover,
+div.audition_signup_mgmt_form fieldset.audition_mgmt_slot_entry:hover div.auditioneer_popup_panel a:hover {
+  text-decoration:underline;
+}
+
+div.auditioneer_hide_draggable td.field-multiple-drag {
+  display:none;
+}

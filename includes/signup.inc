@@ -263,7 +263,7 @@ function _auditioneer_signup_form($form, &$form_state, $args){
   usort($realitems, '_auditioneer_timeblock_sort');
 
   $count = 0;
-  foreach ($realitems as $count=> $realitem){
+  foreach ($realitems as $count => $realitem){
     $checked = 0;
     $contact_fields = array();
     $paintbox_class = "auditioneer_audition_timeblock_paint_unchecked";
@@ -286,8 +286,8 @@ function _auditioneer_signup_form($form, &$form_state, $args){
     }
 
     if($availability && !$date_disabled){
-      foreach ($availability as $ext_req){
-        if($ext_req == $realitem['field_auditioneer_timerange']['#items'][0]){
+      foreach ($availability as $block_count => $ext_req){
+        if($count == $block_count){
           $checked = 1;
           $paintbox_class = "auditioneer_audition_timeblock_paint_checked";
           break;
@@ -617,23 +617,30 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
   if($audition->field_auditioneer_finalized[LANGUAGE_NONE][0]['value'] > 0){
     $finalized = true;
   }
-  $timeblocks = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
-  $requested_blocks = array();
   $count = 0;
-  $slot_type = null;
+  $timeblocks = array();
+  $block_structs = field_view_field('node', $audition, 'field_auditioneer_time_blocks', 'auditioneer_audition_signup_form');
+  while(array_key_exists($count, $block_structs)){
+    $realitem = array_pop($block_structs[$count]['entity']['field_collection_item']);
+
+    array_push($timeblocks, $realitem);
+    $count++;
+  }
+  usort($timeblocks, '_auditioneer_timeblock_sort');
 
   if($form_state['input']['op'] == "Cancel"){
     _auditioneer_cancel_signup($nid, $audition, $user->uid, $finalized);
     return($form);
   }
 
-  while (array_key_exists($count, $timeblocks)){
+  $requested_blocks = array();
+  foreach ($timeblocks as $count => $item){
     if(array_key_exists("${nid}_timeblock_$count", $form_state['input'])){
-      $item = array_pop($timeblocks[$count]['entity']['field_collection_item']);
       $requested_blocks[$count] = $item['field_auditioneer_timerange']['#items'][0];
     }
-    $count++;
   }
+
+  $slot_type = null;
   if(array_key_exists("${nid}_auditioneer_slot_type", $form_state['input'])){
     $slot_type = $form_state['input']["${nid}_auditioneer_slot_type"];
   }
@@ -666,6 +673,7 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
     ->condition('uid', $user->uid)
     ->execute()
     ->fetchAssoc();
+
   $ext_contact = unserialize($ext_request['contact_data']);
   if(!is_array($ext_contact)){
     $ext_contact = array();
@@ -675,12 +683,13 @@ function auditioneer_audition_signup_submit_callback($form, &$form_state){
     ->condition('nid', $form_state['input']['audition_id'])
     ->condition('uid', $user->uid)
     ->execute();
+
   db_insert('auditioneer_signups')
     ->fields(array(
       'nid' => $form_state['input']['audition_id'],
       'uid' => $user->uid,
       'slot_type' => $slot_type,
-      'availability' => serialize($requested_blocks),
+      'availability' => serialize(array_keys($requested_blocks)),
       'contact_data' => serialize(array_merge($ext_contact, $contact))
     ))
     ->execute();
