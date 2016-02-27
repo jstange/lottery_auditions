@@ -175,10 +175,6 @@ function _auditioneer_add_mgmt_slot_buttons($req, $type, &$slot, $finalized, $sl
     }
   }
 
-  if($finalized){
-    return;
-  }
-
   if($type == "waitlist"){
     $slot['promote'] = array(
       '#type' => 'image_button',
@@ -414,10 +410,10 @@ function _auditioneer_mgmt_form($form, &$form_state, $args){
   if(!$finalized){
     $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/save.png'> = Save the current occupant of this audition slot.</div>
       <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/reload.png'> = Remove this auditioner from their current slot and place them back on the Waitlist.</div>
-      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/disqualify.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>
-      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>";
+      <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/disqualify.png'> = Remove this auditioner from their current slot and place them on the Ineligible list.</div>";
   }
-  $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Cancel this person's audition entirely, typically at their request. A random eligible request from the Waitlist will be promoted in its place, if one exists.</div>";
+  $button_descs .= "<div><img src='/".drupal_get_path('module', 'auditioneer')."/images/promote.png'> = Remove this auditioner from the Ineligible list and place them back on the Waitlist, OR promote them from the Waitlist to the first available matching slot that has not already been saved.</div>
+  <div><img src='/".drupal_get_path('module', 'auditioneer')."/images/x.png'> = Cancel this person's audition entirely, typically at their request. A random eligible request from the Waitlist will be promoted in its place, if one exists.</div>";
 
 
   $form['instructions'] = array(
@@ -845,7 +841,7 @@ function _auditioneer_notify_users($audition, $users = array(), $reason = ""){
     ->execute();
 
   $from = variable_get('auditioneer_notify_from', variable_get('site_mail', ini_get('sendmail_from')));
-$from = "stange@johnstange.net";
+//$from = "stange@johnstange.net";
   $messages = array();
   while($req = $result->fetchAssoc()){
     if(count($users) > 0 && !in_array($req['uid'], $users)){
@@ -864,7 +860,7 @@ $from = "stange@johnstange.net";
       }
     }
     // XXX testing
-$mail = "stange@johnstange.net";
+//$mail = "stange@johnstange.net";
     if($req['placement'] != null && $req['placement'] > 0){
       if(!array_key_exists($slot_map[$req['placement']], $got_slot_recips)){
         $got_slot_recips[$slot_map[$req['placement']]] = array();
